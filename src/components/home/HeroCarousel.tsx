@@ -6,9 +6,9 @@ import Image from "next/image";
 import { useRef } from "react";
 
 const slides = [
-  { src: "/campus-1.jpg", alt: "Jadavpur University campus" },
-  { src: "/lab-1.jpg", alt: "Microgrid Lab" },
-  { src: "/lab-2.jpg", alt: "Lab equipment" },
+  { src: "/home/campus-1.jpg", alt: "Jadavpur University Salt Lake Campus" },
+  { src: "/home/lab-1.jpg", alt: "Microgrid Lab" },
+  { src: "/home/lab-2.jpg", alt: "Lab equipment" },
 ];
 
 export default function HeroCarousel() {

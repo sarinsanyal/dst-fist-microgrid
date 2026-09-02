@@ -22,3 +22,21 @@ body {
   color: var(--color-ink);
   font-family: var(--font-sans);
 }
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-red-primary) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 6px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: var(--color-red-primary);
+  border-radius: 999px;
+}
