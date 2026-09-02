@@ -31,19 +31,19 @@ async function fetchSheet<T>(url: string): Promise<T[]> {
 // ---------- Getters ----------
 
 export const getNews = () =>
-  fetchSheet<NewsItem>(process.env.NEXT_PUBLIC_SHEET_NEWS!);
+  fetchSheet<NewsItem>(process.env.SHEET_NEWS!);
 
 export const getMembers = () =>
-  fetchSheet<Member>(process.env.NEXT_PUBLIC_SHEET_MEMBERS!);
+  fetchSheet<Member>(process.env.SHEET_MEMBERS!);
 
 export const getProjects = () =>
-  fetchSheet<Project>(process.env.NEXT_PUBLIC_SHEET_PROJECTS!);
+  fetchSheet<Project>(process.env.SHEET_PROJECTS!);
 
 export const getPublications = () =>
-  fetchSheet<Publication>(process.env.NEXT_PUBLIC_SHEET_PUBLICATIONS!);
+  fetchSheet<Publication>(process.env.SHEET_PUBLICATIONS!);
 
 export const getAwards = () =>
-  fetchSheet<Award>(process.env.NEXT_PUBLIC_SHEET_AWARDS!);
+  fetchSheet<Award>(process.env.SHEET_AWARDS!);
 
 export const getOpportunities = () =>
-  fetchSheet<Opportunity>(process.env.NEXT_PUBLIC_SHEET_OPPORTUNITIES!);
+  fetchSheet<Opportunity>(process.env.SHEET_OPPORTUNITIES!);
