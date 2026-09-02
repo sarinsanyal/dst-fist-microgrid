@@ -9,6 +9,7 @@ const slides = [
   { src: "/home/campus-1.jpg", alt: "Jadavpur University Salt Lake Campus" },
   { src: "/home/lab-1.jpg", alt: "Microgrid Lab" },
   { src: "/home/lab-2.jpg", alt: "Lab equipment" },
+  { src: "/home/lab-3.jpg", alt: "Lab equipment 2" },
 ];
 
 export default function HeroCarousel() {
