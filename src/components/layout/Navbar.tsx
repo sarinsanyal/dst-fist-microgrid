@@ -1,13 +1,21 @@
 import Link from "next/link";
 import { navLinks } from "@/lib/nav-links";
 import MobileMenu from "./MobileMenu";
+import Image from 'next/image';
 
 export default function Navbar() {
   return (
     <header className="sticky font-serif top-0 z-50 bg-red-primary shadow-sm">
       <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6">
-        <Link href="/" className="font-serif text-xl font-bold text-white tracking-tight">
-          DST FIST - Microgrid Lab
+        <Link href="/" className="flex items-center gap-3 font-serif text-xl font-bold text-white tracking-tight">
+          <Image
+            src="/logo.png"
+            alt="DST FIST Logo"
+            width={60}
+            height={60}
+            priority
+          />
+          <span>DST FIST - Microgrid Lab</span>
         </Link>
 
         <nav className="hidden md:flex items-center gap-7">
