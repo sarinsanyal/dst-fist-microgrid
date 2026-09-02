@@ -11,8 +11,8 @@ export default function Navbar() {
           <Image
             src="/logo.png"
             alt="DST FIST Logo"
-            width={60}
-            height={60}
+            width={45}
+            height={45}
             priority
           />
           <span>DST FIST - Microgrid Lab</span>
