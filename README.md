@@ -10,7 +10,11 @@ Developed by **Sarin Sanyal** (UG Batch of '28, Department of Power Engineering)
 
 This document outlines the operational rules, column specifications, and formatting standards for maintaining the DST FIST Microgrid Lab web database. 
 
-All site content is dynamically populated from these sheets. Strictly following these guidelines prevents parsing errors, broken layout cards, and missing visual assets.
+All site content is dynamically populated from these sheets. 
+
+**After editing in the Sheet, it would take some time to reflect the changes, so please wait for atmost a minute.**
+
+Strictly following these guidelines prevents parsing errors, broken layout cards, and missing visual assets.
 
 ---
 
@@ -120,4 +124,4 @@ Standard Google Drive view links (`drive.google.com/file/d/.../view`) return an 
 * **Quotes and Special Characters:**
   * Avoid putting double-quotes (`"`) inside text cells. If necessary, use single quotes (`'`) to avoid breaking CSV column alignment during exports.
 * **Automatic Republishing:**
-  * Ensure the sheet remains published by verifying **File** -> **Share** -> **Publish to Web** has **"Automatically republish when changes are made"** checked. Changes take up to 10 seconds to reflect on the live website.
+  * Ensure the sheet remains published by verifying **File** -> **Share** -> **Publish to Web** has **"Automatically republish when changes are made"** checked. Changes take up to 1 minute to reflect on the live website.
