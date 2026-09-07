@@ -12,7 +12,7 @@ export default function MobileMenu() {
       {/* Hamburger button */}
       <button
         onClick={() => setOpen(!open)}
-        className="flex flex-col justify-center items-center gap-1.5 w-8 h-8"
+        className="flex flex-col justify-center cursor-pointer items-center gap-1.5 w-8 h-8"
         aria-label="Toggle menu"
       >
         <span className={`block h-0.5 w-6 bg-white transition-all duration-300 ${open ? "rotate-45 translate-y-2" : ""}`} />

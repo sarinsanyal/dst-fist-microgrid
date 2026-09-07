@@ -145,7 +145,7 @@ export default function LoginPage() {
           <button
             type="button"
             onClick={handleResend}
-            className="text-sm text-ink-soft hover:text-ink underline"
+            className="text-sm text-ink-soft hover:text-ink underline cursor-pointer"
           >
             Resend confirmation email
           </button>

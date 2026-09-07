@@ -93,19 +93,19 @@ export default function AdminCalendar({
           <div className="flex items-center gap-1 border border-ink/10 rounded-lg p-0.5 bg-slate-50">
             <button
               onClick={() => setCurrentMonth((m) => subMonths(m, 1))}
-              className="px-2.5 py-1 text-xs text-ink-soft hover:text-ink font-medium rounded hover:bg-white"
+              className="px-2.5 py-1 text-xs text-ink-soft hover:text-ink font-medium rounded hover:bg-white cursor-pointer"
             >
               ← Prev
             </button>
             <button
               onClick={() => setCurrentMonth(new Date())}
-              className="px-2.5 py-1 text-xs text-ink-soft hover:text-ink font-medium rounded hover:bg-white"
+              className="px-2.5 py-1 text-xs text-ink-soft hover:text-ink font-medium rounded hover:bg-white cursor-pointer"
             >
               Today
             </button>
             <button
               onClick={() => setCurrentMonth((m) => addMonths(m, 1))}
-              className="px-2.5 py-1 text-xs text-ink-soft hover:text-ink font-medium rounded hover:bg-white"
+              className="px-2.5 py-1 text-xs text-ink-soft hover:text-ink font-medium rounded hover:bg-white cursor-pointer"
             >
               Next →
             </button>
@@ -226,7 +226,7 @@ export default function AdminCalendar({
               </div>
               <button
                 onClick={() => setSelectedDate(null)}
-                className="text-sm font-semibold text-ink-soft hover:text-ink px-2 py-1 rounded-lg hover:bg-slate-100"
+                className="text-sm font-semibold text-ink-soft hover:text-ink px-2 py-1 rounded-lg hover:bg-slate-100 cursor-pointer"
               >
                 ✕
               </button>
@@ -277,7 +277,7 @@ export default function AdminCalendar({
 
                     <button
                       onClick={() => handleDeleteTask(task.id)}
-                      className="text-xs text-ink-soft hover:text-red-primary shrink-0"
+                      className="text-xs text-ink-soft hover:text-red-primary shrink-0 cursor-pointer"
                     >
                       Delete
                     </button>
@@ -289,7 +289,7 @@ export default function AdminCalendar({
             <div className="pt-2 border-t border-ink/10 flex justify-end">
               <button
                 onClick={() => setSelectedDate(null)}
-                className="bg-slate-100 border border-ink/10 text-ink font-semibold text-xs rounded-lg px-4 py-2 hover:bg-slate-200"
+                className="bg-slate-100 border border-ink/10 text-ink font-semibold text-xs rounded-lg px-4 py-2 hover:bg-slate-200 cursor-pointer"
               >
                 Close
               </button>

@@ -103,7 +103,7 @@ export default function TaskListView({
         <button
           type="submit"
           disabled={isSubmitting || !title.trim()}
-          className="w-full bg-red-primary text-white font-semibold text-sm rounded-lg py-2.5 transition-opacity disabled:opacity-50"
+          className="w-full bg-red-primary text-white font-semibold text-sm rounded-lg py-2.5 transition-opacity disabled:opacity-50 cursor-pointer"
         >
           {isSubmitting ? "Adding..." : "Add task"}
         </button>
@@ -155,7 +155,7 @@ export default function TaskListView({
 
             <button
               onClick={() => onDelete(task.id)}
-              className="text-xs text-ink-soft hover:text-red-primary shrink-0"
+              className="text-xs text-ink-soft hover:text-red-primary shrink-0 cursor-pointer"
             >
               Delete
             </button>

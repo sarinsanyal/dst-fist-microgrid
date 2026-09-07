@@ -86,7 +86,7 @@ export default function AdminDashboardClient({
       <div className="flex border-b border-ink/10 gap-1 sm:gap-4">
         <button
           onClick={() => setActiveTab("overview")}
-          className={`pb-3 px-4 font-semibold text-sm transition-colors border-b-2 ${
+          className={`pb-3 px-4 font-semibold text-sm transition-colors border-b-2 cursor-pointer ${
             activeTab === "overview"
               ? "border-red-primary text-red-primary"
               : "border-transparent text-ink-soft hover:text-ink"
@@ -96,7 +96,7 @@ export default function AdminDashboardClient({
         </button>
         <button
           onClick={() => setActiveTab("calendar")}
-          className={`pb-3 px-4 font-semibold text-sm transition-colors border-b-2 ${
+          className={`pb-3 px-4 font-semibold text-sm transition-colors border-b-2 cursor-pointer ${
             activeTab === "calendar"
               ? "border-red-primary text-red-primary"
               : "border-transparent text-ink-soft hover:text-ink"
@@ -106,7 +106,7 @@ export default function AdminDashboardClient({
         </button>
         <button
           onClick={() => setActiveTab("team")}
-          className={`pb-3 px-4 font-semibold text-sm transition-colors border-b-2 ${
+          className={`pb-3 px-4 font-semibold text-sm transition-colors border-b-2 cursor-pointer ${
             activeTab === "team"
               ? "border-red-primary text-red-primary"
               : "border-transparent text-ink-soft hover:text-ink"

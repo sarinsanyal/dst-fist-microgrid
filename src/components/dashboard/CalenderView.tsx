@@ -110,19 +110,19 @@ export default function CalendarView({
           <div className="flex items-center gap-1 border border-ink/10 rounded-lg p-0.5">
             <button
               onClick={() => setCurrentMonth((m) => subMonths(m, 1))}
-              className="px-2 py-1 text-xs text-ink-soft hover:text-ink font-medium rounded hover:bg-ink/5"
+              className="px-2 py-1 text-xs text-ink-soft hover:text-ink font-medium rounded hover:bg-ink/5 cursor-pointer"
             >
               ← Prev
             </button>
             <button
               onClick={() => setCurrentMonth(new Date())}
-              className="px-2 py-1 text-xs text-ink-soft hover:text-ink font-medium rounded hover:bg-ink/5"
+              className="px-2 py-1 text-xs text-ink-soft hover:text-ink font-medium rounded hover:bg-ink/5 cursor-pointer"
             >
               Today
             </button>
             <button
               onClick={() => setCurrentMonth((m) => addMonths(m, 1))}
-              className="px-2 py-1 text-xs text-ink-soft hover:text-ink font-medium rounded hover:bg-ink/5"
+              className="px-2 py-1 text-xs text-ink-soft hover:text-ink font-medium rounded hover:bg-ink/5 cursor-pointer"
             >
               Next →
             </button>
@@ -256,7 +256,7 @@ export default function CalendarView({
               </div>
               <button
                 onClick={() => setSelectedDate(null)}
-                className="text-sm font-semibold text-ink-soft hover:text-ink px-2 py-1 rounded-lg hover:bg-ink/5"
+                className="text-sm font-semibold text-ink-soft hover:text-ink px-2 py-1 rounded-lg cursor-pointer hover:bg-ink/5"
               >
                 ✕
               </button>
@@ -307,7 +307,7 @@ export default function CalendarView({
                     </div>
                     <button
                       onClick={() => onDelete(task.id)}
-                      className="text-xs text-ink-soft hover:text-red-primary shrink-0"
+                      className="text-xs text-ink-soft cursor-pointer hover:text-red-primary shrink-0"
                     >
                       Delete
                     </button>
@@ -355,14 +355,14 @@ export default function CalendarView({
                 <button
                   type="button"
                   onClick={() => setSelectedDate(null)}
-                  className="flex-1 border border-ink/10 text-ink-soft font-semibold text-xs rounded-lg py-2 hover:bg-ink/5"
+                  className="flex-1 border border-ink/10 text-ink-soft cursor-pointer font-semibold text-xs rounded-lg py-2 hover:bg-ink/5"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting || !newTitle.trim()}
-                  className="flex-1 bg-red-primary text-white font-semibold text-xs rounded-lg py-2 transition-opacity disabled:opacity-50"
+                  className="flex-1 bg-red-primary text-white cursor-pointer font-semibold text-xs rounded-lg py-2 transition-opacity disabled:opacity-50"
                 >
                   {isSubmitting ? "Adding..." : "Add Task"}
                 </button>

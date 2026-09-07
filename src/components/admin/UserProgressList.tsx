@@ -119,7 +119,7 @@ export default function UserProgressList({ rollups }: { rollups: Rollup[] }) {
 
                 <button
                   onClick={() => handleToggleExpand(r.user_id)}
-                  className="text-xs text-ink-soft hover:text-ink font-medium px-2.5 py-1 rounded-md bg-ink/5"
+                  className="text-xs text-ink-soft hover:text-ink font-medium px-2.5 py-1 rounded-md bg-ink/5 cursor-pointer"
                 >
                   {isExpanded ? "Hide details" : "View details"}
                 </button>
@@ -127,7 +127,7 @@ export default function UserProgressList({ rollups }: { rollups: Rollup[] }) {
                 <button
                   onClick={() => handleRemove(r.user_id)}
                   disabled={removingId === r.user_id}
-                  className="text-xs text-ink-soft hover:text-red-primary disabled:opacity-50"
+                  className="text-xs text-ink-soft hover:text-red-primary disabled:opacity-50 cursor-pointer"
                 >
                   {removingId === r.user_id ? "Removing..." : "Remove"}
                 </button>

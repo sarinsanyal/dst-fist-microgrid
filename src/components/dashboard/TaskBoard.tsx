@@ -81,7 +81,7 @@ export default function TaskBoard({
       <div className="flex gap-2 mb-6">
         <button
           onClick={() => setView("list")}
-          className={`text-sm font-semibold px-4 py-2 rounded-lg ${
+          className={`text-sm font-semibold px-4 py-2 rounded-lg cursor-pointer ${
             view === "list"
               ? "bg-red-primary text-white"
               : "text-ink-soft bg-white border border-ink/10"
@@ -91,7 +91,7 @@ export default function TaskBoard({
         </button>
         <button
           onClick={() => setView("calendar")}
-          className={`text-sm font-semibold px-4 py-2 rounded-lg ${
+          className={`text-sm cursor-pointer font-semibold px-4 py-2 rounded-lg ${
             view === "calendar"
               ? "bg-red-primary text-white"
               : "text-ink-soft bg-white border border-ink/10"
