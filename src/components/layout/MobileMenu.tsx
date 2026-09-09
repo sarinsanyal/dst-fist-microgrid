@@ -4,7 +4,12 @@ import { useState } from "react";
 import Link from "next/link";
 import { navLinks } from "@/lib/nav-links";
 
-export default function MobileMenu() {
+interface MobileMenuProps {
+  targetHref: string;
+  buttonText: string;
+}
+
+export default function MobileMenu({ targetHref, buttonText }: MobileMenuProps) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -29,11 +34,22 @@ export default function MobileMenu() {
                 key={link.href}
                 href={link.href}
                 onClick={() => setOpen(false)}
-                className="text-sm font-bold text-white/95 py-3 border-b border-white/10 last:border-0 hover:text-white transition-colors"
+                className="text-sm font-bold text-white/95 py-3 border-b border-white/10 hover:text-white transition-colors"
               >
                 {link.label}
               </Link>
             ))}
+
+            {/* Mobile Auth Button */}
+            <div className="pt-3 pb-1">
+              <Link
+                href={targetHref}
+                onClick={() => setOpen(false)}
+                className="block w-full text-center rounded-md bg-white px-4 py-2 text-sm font-bold text-red-primary shadow-sm hover:bg-gray-100 transition-colors"
+              >
+                {buttonText}
+              </Link>
+            </div>
           </nav>
         </div>
       )}

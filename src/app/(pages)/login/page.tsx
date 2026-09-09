@@ -30,7 +30,7 @@ export default function LoginPage() {
   const [showGroupDropdown, setShowGroupDropdown] = useState(false);
 
   const router = useRouter();
-  
+
   // Memoize client so it isn't recreated on every keystroke
   const supabase = useMemo(() => createClient(), []);
 
@@ -117,17 +117,29 @@ export default function LoginPage() {
     setLoading(true);
 
     if (mode === "login") {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      // 1. Sign in the user
+      const { data: authData, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) {
         setError(error.message);
         setLoading(false);
         return;
       }
-      
-      // Fast hard redirect ensures fresh cookies on server dashboard
-      window.location.href = "/dashboard";
-      return;
+
+      // 2. Fetch user's role from profiles
+      if (authData.user) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("role")
+          .eq("id", authData.user.id)
+          .single();
+
+        // 3. Redirect based on role
+        const targetPath = profile?.role === "admin" ? "/admin" : "/dashboard";
+        window.location.href = targetPath;
+        return;
+      }
     } else {
+      // Signup Mode
       const finalSpecialties = specialtyInput.trim()
         ? [...specialties, specialtyInput.trim()]
         : specialties;
@@ -183,6 +195,7 @@ export default function LoginPage() {
           return;
         }
 
+        // New signups default to /dashboard
         window.location.href = "/dashboard";
         return;
       }
@@ -385,8 +398,8 @@ export default function LoginPage() {
           {loading
             ? "Please wait..."
             : mode === "login"
-            ? "Sign in"
-            : "Create account"}
+              ? "Sign in"
+              : "Create account"}
         </button>
       </form>
 

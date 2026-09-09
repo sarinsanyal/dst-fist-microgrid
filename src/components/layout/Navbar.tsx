@@ -1,9 +1,31 @@
 import Link from "next/link";
+import Image from "next/image";
 import { navLinks } from "@/lib/nav-links";
 import MobileMenu from "./MobileMenu";
-import Image from 'next/image';
+import { createClient } from "../../../lib/supabase/server";
 
-export default function Navbar() {
+export default async function Navbar() {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  let targetHref = "/login";
+  let buttonText = "Login (Members)";
+
+  if (user) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+
+    const isAdmin = profile?.role === "admin";
+    targetHref = isAdmin ? "/admin" : "/dashboard";
+    buttonText = isAdmin ? "Admin Dashboard" : "Dashboard";
+  }
+
   return (
     <header className="sticky font-serif top-0 z-50 bg-red-primary shadow-sm">
       <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6">
@@ -18,6 +40,7 @@ export default function Navbar() {
           <span>DST FIST - Microgrid Lab</span>
         </Link>
 
+        {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center gap-7">
           {navLinks.map((link) => (
             <Link
@@ -31,8 +54,17 @@ export default function Navbar() {
               {link.label}
             </Link>
           ))}
+
+          <Link
+            href={targetHref}
+            className="rounded-md bg-white px-4 py-2 text-sm font-bold text-red-primary transition-colors hover:bg-gray-100 shadow-sm"
+          >
+            {buttonText}
+          </Link>
         </nav>
-        <MobileMenu />
+
+        {/* Mobile Navigation */}
+        <MobileMenu targetHref={targetHref} buttonText={buttonText} />
       </div>
     </header>
   );
