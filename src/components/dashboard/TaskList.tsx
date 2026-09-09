@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "../../../lib/supabase/server";
-import TaskBoard from "./TaskBoard";
+import TaskDashboardContainer from "./TaskDashboardContainer";
 import SignOutButton from "./SignOutButton";
 
 export default async function DashboardPage() {
@@ -14,9 +14,10 @@ export default async function DashboardPage() {
     redirect("/login");
   }
 
+  // Fetch full profile required by TaskDashboardContainer
   const { data: profile } = await supabase
     .from("profiles")
-    .select("full_name, role")
+    .select("full_name, role, avatar_url, specialties, group_name")
     .eq("id", user.id)
     .single();
 
@@ -33,8 +34,6 @@ export default async function DashboardPage() {
 
   const { data: tasks } = await tasksQuery;
 
-
-
   return (
     <main className="mx-auto max-w-3xl px-6 py-12 min-h-screen">
       <div className="flex items-start justify-between gap-4 mb-10">
@@ -49,7 +48,12 @@ export default async function DashboardPage() {
         <SignOutButton />
       </div>
 
-      <TaskBoard initialTasks={tasks ?? []} userId={user.id} isAdmin={isAdmin} />
+      <TaskDashboardContainer
+        initialTasks={tasks ?? []}
+        profile={profile as any}
+        userId={user.id}
+        isAdmin={isAdmin}
+      />
     </main>
   );
 }

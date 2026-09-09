@@ -1,25 +1,40 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { createClient } from "../../../lib/supabase/client";
 import type { Task } from "@/types/task";
 import TaskListView from "./TaskListView";
 import CalendarView from "./CalenderView";
 import TaskModal from "./TaskModal";
 
+type TaskBoardProps = {
+  initialTasks: Task[];
+  userId: string;
+  isAdmin?: boolean;
+  onTasksChange?: (tasks: Task[]) => void;
+};
+
 export default function TaskBoard({
   initialTasks,
   userId,
   isAdmin = false,
-}: {
-  initialTasks: Task[];
-  userId: string;
-  isAdmin: boolean;
-}) {
+  onTasksChange,
+}: TaskBoardProps) {
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
   const [view, setView] = useState<"list" | "calendar">("list");
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const supabase = createClient();
+
+  // Keep local state updated if server props re-evaluate
+  // useEffect(() => {
+  //   setTasks(initialTasks);
+  // }, [initialTasks]);
+
+  // Safely updates local state and notifies parent without triggering render-phase warnings
+  function updateTaskList(nextTasks: Task[]) {
+    setTasks(nextTasks);
+    onTasksChange?.(nextTasks);
+  }
 
   async function addTask(
     title: string,
@@ -43,7 +58,7 @@ export default function TaskBoard({
       .single();
 
     if (!error && data) {
-      setTasks((prev) => [...prev, data]);
+      updateTaskList([...tasks, data]);
     } else if (error) {
       console.error("Error creating task:", error.message);
     }
@@ -54,13 +69,13 @@ export default function TaskBoard({
     const nextStatus: Task["status"] = nowCompleted ? "completed" : "todo";
     const nextCompletedAt = nowCompleted ? new Date().toISOString() : null;
 
-    setTasks((prev) =>
-      prev.map((t) =>
-        t.id === task.id
-          ? { ...t, status: nextStatus, completed_at: nextCompletedAt }
-          : t
-      )
+    const nextTasks = tasks.map((t) =>
+      t.id === task.id
+        ? { ...t, status: nextStatus, completed_at: nextCompletedAt }
+        : t
     );
+
+    updateTaskList(nextTasks);
 
     await supabase
       .from("tasks")
@@ -69,12 +84,17 @@ export default function TaskBoard({
   }
 
   async function deleteTask(id: string) {
-    setTasks((prev) => prev.filter((t) => t.id !== id));
+    const nextTasks = tasks.filter((t) => t.id !== id);
+    updateTaskList(nextTasks);
+
     await supabase.from("tasks").delete().eq("id", id);
   }
 
   function handleUpdateTask(updatedTask: Task) {
-    setTasks((prev) => prev.map((t) => (t.id === updatedTask.id ? updatedTask : t)));
+    const nextTasks = tasks.map((t) =>
+      t.id === updatedTask.id ? updatedTask : t
+    );
+    updateTaskList(nextTasks);
     setSelectedTask(updatedTask);
   }
 

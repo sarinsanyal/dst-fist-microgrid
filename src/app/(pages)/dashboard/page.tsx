@@ -1,9 +1,8 @@
 import { redirect } from "next/navigation";
 import { createClient } from "../../../../lib/supabase/server";
-import TaskBoard from "@/components/dashboard/TaskBoard";
+import TaskDashboardContainer from "@/components/dashboard/TaskDashboardContainer";
 import SignOutButton from "@/components/dashboard/SignOutButton";
 import AvatarUpload from "@/components/dashboard/AvatarUpload";
-import ReportGenerator from "@/components/dashboard/ReportGenerator";
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -25,14 +24,13 @@ export default async function DashboardPage() {
 
   const isAdmin = profile?.role === "admin";
 
-  // 2. Fix for #4: Filter tasks based on Role
+  // 2. Filter tasks based on Role
   let tasksQuery = supabase
     .from("tasks")
     .select("*, profiles:assigned_to(full_name)")
     .order("due_date", { ascending: true, nullsFirst: false });
 
   if (!isAdmin) {
-    // Non-admins only see tasks assigned to them
     tasksQuery = tasksQuery.eq("assigned_to", user.id);
   }
 
@@ -50,7 +48,6 @@ export default async function DashboardPage() {
   const groupName = extractGroupName(profile?.groups);
   const specialties = profile?.specialties ?? [];
 
-  // Safe normalized profile fallback for components expecting a non-null Profile
   const formattedProfile = {
     full_name: profile?.full_name ?? "User",
     role: profile?.role ?? "Member",
@@ -80,9 +77,7 @@ export default async function DashboardPage() {
               </p>
             </div>
 
-            {/* Separated Metadata Badges */}
             <div className="flex flex-wrap items-center gap-2 pt-1">
-              {/* Group Badge */}
               {groupName && (
                 <div className="flex items-center gap-1.5 bg-blue-50 text-blue-800 border border-blue-200 text-xs font-medium rounded-md px-2.5 py-1">
                   <span className="text-[10px] uppercase font-bold text-blue-500">Group:</span>
@@ -90,7 +85,6 @@ export default async function DashboardPage() {
                 </div>
               )}
 
-              {/* Specialties Badges */}
               {specialties.map((s: string) => (
                 <div
                   key={s}
@@ -105,15 +99,17 @@ export default async function DashboardPage() {
         </div>
 
         <div className="flex items-center gap-3">
-          {/* Feature #3: Automated PDF Generator */}
-          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-          <ReportGenerator tasks={tasks ?? []} profile={formattedProfile as any} />
           <SignOutButton />
         </div>
       </div>
 
-      {/* Task Board */}
-      <TaskBoard initialTasks={tasks ?? []} userId={user.id} isAdmin={isAdmin} />
+      {/* Shared State Container */}
+      <TaskDashboardContainer
+        initialTasks={tasks ?? []}
+        profile={formattedProfile}
+        userId={user.id}
+        isAdmin={isAdmin}
+      />
     </main>
   );
 }
