@@ -154,7 +154,7 @@ export default function LoginPage() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-red-primary text-white font-semibold text-sm rounded-lg py-2.5 disabled:opacity-50"
+          className="w-full bg-red-primary text-white font-semibold text-sm rounded-lg py-2.5 cursor-pointer disabled:opacity-50"
         >
           {loading
             ? "Please wait..."
