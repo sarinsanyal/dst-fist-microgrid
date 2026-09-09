@@ -26,15 +26,45 @@ export default async function AdminPage() {
     .select("*")
     .order("full_name");
 
+  // Fetch avatar_url and join group name via group_id
+  const { data: profiles } = await supabase
+    .from("profiles")
+    .select("id, avatar_url, groups:group_id(name)");
+
+  type ProfileQueryResult = {
+    id: string;
+    avatar_url: string | null;
+    groups: { name: string } | null;
+  };
+
+  const profileMap = new Map(
+    ((profiles as unknown as ProfileQueryResult[]) || []).map((p) => [
+      p.id,
+      {
+        avatar_url: p.avatar_url,
+        group_name: p.groups?.name ?? null,
+      },
+    ])
+  );
+
+  const enrichedRollups = (rollups ?? []).map((r) => {
+    const profileInfo = profileMap.get(r.user_id);
+    return {
+      ...r,
+      avatar_url: r.avatar_url || profileInfo?.avatar_url || null,
+      group_name: profileInfo?.group_name || null,
+    };
+  });
+
   const { data: tasks } = await supabase
     .from("tasks")
-    .select("*, profiles:assigned_to(full_name)")
+    .select("*, profiles:assigned_to(full_name, avatar_url)")
     .order("due_date", { ascending: true, nullsFirst: false });
 
   return (
     <AdminDashboardClient
       initialTasks={tasks ?? []}
-      rollups={rollups ?? []}
+      rollups={enrichedRollups}
     />
   );
 }

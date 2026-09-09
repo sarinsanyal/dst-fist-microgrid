@@ -50,6 +50,15 @@ export default async function DashboardPage() {
   const groupName = extractGroupName(profile?.groups);
   const specialties = profile?.specialties ?? [];
 
+  // Safe normalized profile fallback for components expecting a non-null Profile
+  const formattedProfile = {
+    full_name: profile?.full_name ?? "User",
+    role: profile?.role ?? "Member",
+    avatar_url: profile?.avatar_url ?? null,
+    specialties: specialties,
+    group_name: groupName ?? null,
+  };
+
   return (
     <main className="mx-auto max-w-4xl px-6 py-12 min-h-screen">
       {/* Header Section */}
@@ -97,7 +106,8 @@ export default async function DashboardPage() {
 
         <div className="flex items-center gap-3">
           {/* Feature #3: Automated PDF Generator */}
-          <ReportGenerator tasks={tasks ?? []} profile={profile} />
+          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+          <ReportGenerator tasks={tasks ?? []} profile={formattedProfile as any} />
           <SignOutButton />
         </div>
       </div>

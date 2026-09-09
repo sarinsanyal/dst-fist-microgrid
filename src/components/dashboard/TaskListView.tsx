@@ -29,6 +29,9 @@ export default function TaskListView({
   const [dueDate, setDueDate] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Track in-flight toggle requests per task ID
+  const [togglingIds, setTogglingIds] = useState<Record<string, boolean>>({});
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!title.trim() || isSubmitting) return;
@@ -46,6 +49,21 @@ export default function TaskListView({
     setDueDate("");
     setFrequency("daily");
     setIsSubmitting(false);
+  }
+
+  async function handleToggleTask(
+    e: React.ChangeEvent<HTMLInputElement>,
+    task: Task
+  ) {
+    e.stopPropagation();
+    if (togglingIds[task.id]) return;
+
+    setTogglingIds((prev) => ({ ...prev, [task.id]: true }));
+    try {
+      await onToggle(task);
+    } finally {
+      setTogglingIds((prev) => ({ ...prev, [task.id]: false }));
+    }
   }
 
   return (
@@ -102,62 +120,82 @@ export default function TaskListView({
       </form>
 
       <div className="space-y-2">
-        {tasks.map((task) => (
-          <div
-            key={task.id}
-            className="bg-white border border-ink/10 rounded-xl p-4 shadow-sm flex items-start justify-between gap-3"
-          >
-            <div className="flex items-start gap-3 flex-1 cursor-pointer" onClick={() => onSelectTask(task)}>
-              <input
-                type="checkbox"
-                checked={task.status === "completed"}
-                onChange={(e) => {
-                  e.stopPropagation();
-                  onToggle(task);
+        {tasks.map((task) => {
+          const isToggling = !!togglingIds[task.id];
+
+          return (
+            <div
+              key={task.id}
+              className="bg-white border border-ink/10 rounded-xl p-4 shadow-sm flex items-start justify-between gap-3"
+            >
+              <div
+                className="flex items-start gap-3 flex-1 cursor-pointer"
+                onClick={() => {
+                  if (!isToggling) onSelectTask(task);
                 }}
-                className="mt-1 h-4 w-4 rounded border-ink/20 text-red-primary focus:ring-red-primary/40 cursor-pointer"
-              />
-              <div className="space-y-1">
-                <p
-                  className={`text-sm font-semibold text-ink ${
-                    task.status === "completed" ? "line-through text-ink-soft" : ""
-                  }`}
+              >
+                {/* Stopped click propagation on checkbox container */}
+                <div
+                  className="mt-1 h-4 w-4 flex items-center justify-center shrink-0"
+                  onClick={(e) => e.stopPropagation()}
                 >
-                  {task.title}
-                </p>
-
-                {task.description && (
-                  <p className="text-xs text-ink-soft whitespace-pre-wrap">
-                    {task.description}
-                  </p>
-                )}
-
-                <div className="flex gap-2 text-[11px] text-ink-soft pt-1">
-                  <span className="capitalize bg-ink/5 px-2 py-0.5 rounded">
-                    {task.frequency.replace("_", " ")}
-                  </span>
-                  {task.due_date && (
-                    <span className="bg-ink/5 px-2 py-0.5 rounded">
-                      Due: {task.due_date}
-                    </span>
-                  )}
-                  {task.summary_url && (
-                    <span className="bg-emerald-100 text-emerald-800 font-medium px-2 py-0.5 rounded">
-                      📄 Summary Attached
-                    </span>
+                  {isToggling ? (
+                    <div className="h-3.5 w-3.5 border-2 border-red-primary border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <input
+                      type="checkbox"
+                      disabled={isToggling}
+                      checked={task.status === "completed"}
+                      onChange={(e) => handleToggleTask(e, task)}
+                      className="h-4 w-4 rounded border-ink/20 text-red-primary focus:ring-red-primary/40 cursor-pointer"
+                    />
                   )}
                 </div>
-              </div>
-            </div>
 
-            <button
-              onClick={() => onDelete(task.id)}
-              className="text-xs text-ink-soft hover:text-red-primary shrink-0 cursor-pointer"
-            >
-              Delete
-            </button>
-          </div>
-        ))}
+                <div className="space-y-1">
+                  <p
+                    className={`text-sm font-semibold text-ink ${
+                      task.status === "completed"
+                        ? "line-through text-ink-soft"
+                        : ""
+                    }`}
+                  >
+                    {task.title}
+                  </p>
+
+                  {task.description && (
+                    <p className="text-xs text-ink-soft whitespace-pre-wrap">
+                      {task.description}
+                    </p>
+                  )}
+
+                  <div className="flex gap-2 text-[11px] text-ink-soft pt-1">
+                    <span className="capitalize bg-ink/5 px-2 py-0.5 rounded">
+                      {task.frequency.replace("_", " ")}
+                    </span>
+                    {task.due_date && (
+                      <span className="bg-ink/5 px-2 py-0.5 rounded">
+                        Due: {task.due_date}
+                      </span>
+                    )}
+                    {task.summary_url && (
+                      <span className="bg-emerald-100 text-emerald-800 font-medium px-2 py-0.5 rounded">
+                        Summary Attached
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <button
+                onClick={() => onDelete(task.id)}
+                className="text-xs text-ink-soft hover:text-red-primary shrink-0 cursor-pointer"
+              >
+                Delete
+              </button>
+            </div>
+          );
+        })}
       </div>
     </div>
   );

@@ -1,3 +1,4 @@
+// /api/admin/remove-user/route.ts
 import { NextResponse } from "next/server";
 import { createClient } from "../../../../../lib/supabase/client";
 import { createAdminClient } from "../../../../../lib/supabase/admin";

@@ -111,9 +111,9 @@ export default function TaskModal({ task, onClose, onUpdateTask }: TaskModalProp
                                 href={summaryUrl}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-emerald-800 font-semibold hover:underline truncate max-w-[200px]"
+                                className="text-emerald-800 font-semibold hover:underline truncate max-w-50"
                             >
-                                📄 View Summary File
+                                View Summary File
                             </a>
                             <label className="text-ink-soft hover:text-ink cursor-pointer text-[11px] font-medium underline">
                                 Replace

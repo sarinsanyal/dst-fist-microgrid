@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "../../../../lib/supabase/client";
 
@@ -30,17 +30,22 @@ export default function LoginPage() {
   const [showGroupDropdown, setShowGroupDropdown] = useState(false);
 
   const router = useRouter();
-  const supabase = createClient();
+  
+  // Memoize client so it isn't recreated on every keystroke
+  const supabase = useMemo(() => createClient(), []);
 
+  // Only fetch groups when switching to signup mode
   useEffect(() => {
-    supabase
-      .from("groups")
-      .select("id, name")
-      .order("name")
-      .then(({ data }) => {
-        if (data) setGroupsList(data);
-      });
-  }, []);
+    if (mode === "signup" && groupsList.length === 0) {
+      supabase
+        .from("groups")
+        .select("id, name")
+        .order("name")
+        .then(({ data }) => {
+          if (data) setGroupsList(data);
+        });
+    }
+  }, [mode, groupsList.length, supabase]);
 
   async function findOrCreateGroupId(rawName: string): Promise<string | null> {
     const name = rawName.trim();
@@ -118,8 +123,10 @@ export default function LoginPage() {
         setLoading(false);
         return;
       }
-      router.push("/dashboard");
-      router.refresh();
+      
+      // Fast hard redirect ensures fresh cookies on server dashboard
+      window.location.href = "/dashboard";
+      return;
     } else {
       const finalSpecialties = specialtyInput.trim()
         ? [...specialties, specialtyInput.trim()]
@@ -142,7 +149,6 @@ export default function LoginPage() {
       if (data.user) {
         let avatarUrl: string | null = null;
 
-        // 1. Upload Avatar if selected
         if (avatarFile) {
           const ext = avatarFile.name.split(".").pop() || "jpg";
           const filePath = `${data.user.id}/${Date.now()}.${ext}`;
@@ -159,10 +165,8 @@ export default function LoginPage() {
           }
         }
 
-        // 2. Find or Create Group
         const groupId = await findOrCreateGroupId(groupQuery);
 
-        // 3. Upsert full profile info (creates row if trigger did not auto-create it)
         const { error: profileError } = await supabase
           .from("profiles")
           .upsert({
@@ -179,9 +183,8 @@ export default function LoginPage() {
           return;
         }
 
-        // 4. Redirect immediately after creation
-        router.push("/dashboard");
-        router.refresh();
+        window.location.href = "/dashboard";
+        return;
       }
     }
 
@@ -205,7 +208,6 @@ export default function LoginPage() {
       >
         {mode === "signup" && (
           <>
-            {/* Avatar Photo Selection */}
             <div className="flex flex-col items-center justify-center mb-2">
               <label className="cursor-pointer group flex flex-col items-center gap-2">
                 <div className="w-20 h-20 rounded-full border border-ink/10 bg-ink/5 overflow-hidden flex items-center justify-center relative">
@@ -251,7 +253,6 @@ export default function LoginPage() {
               />
             </div>
 
-            {/* Group search/select */}
             <div className="relative">
               <label className="text-xs font-semibold text-ink block mb-1.5">
                 Group
@@ -296,7 +297,6 @@ export default function LoginPage() {
               )}
             </div>
 
-            {/* Specialties tag input */}
             <div>
               <label className="text-xs font-semibold text-ink block mb-1.5">
                 Specialties
@@ -325,7 +325,7 @@ export default function LoginPage() {
                   onKeyDown={handleSpecialtyKeyDown}
                   onBlur={() => addSpecialty(specialtyInput)}
                   placeholder={specialties.length === 0 ? "e.g. solar, battery storage" : ""}
-                  className="flex-1 min-w-[100px] text-sm text-ink focus:outline-none py-0.5"
+                  className="flex-1 min-w-25 text-sm text-ink focus:outline-none py-0.5"
                 />
               </div>
               <p className="text-xs text-ink-soft mt-1">

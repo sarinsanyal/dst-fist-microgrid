@@ -1,3 +1,4 @@
+// /api/admin/user-tasks/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
@@ -16,7 +17,7 @@ export async function GET(req: NextRequest) {
 
   const { data: tasks, error } = await supabaseAdmin
     .from("tasks")
-    .select("id, title, description, status, created_at")
+    .select("id, title, description, frequency, status, due_date, created_at, summary_url, completed_at")
     .eq("assigned_to", userId)
     .order("created_at", { ascending: false });
 

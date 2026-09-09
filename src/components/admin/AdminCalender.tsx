@@ -95,7 +95,7 @@ export default function AdminCalendar({
               onClick={() => setCurrentMonth((m) => subMonths(m, 1))}
               className="px-2.5 py-1 text-xs text-ink-soft hover:text-ink font-medium rounded hover:bg-white cursor-pointer"
             >
-              ← Prev
+              Prev
             </button>
             <button
               onClick={() => setCurrentMonth(new Date())}
@@ -107,7 +107,7 @@ export default function AdminCalendar({
               onClick={() => setCurrentMonth((m) => addMonths(m, 1))}
               className="px-2.5 py-1 text-xs text-ink-soft hover:text-ink font-medium rounded hover:bg-white cursor-pointer"
             >
-              Next →
+              Next
             </button>
           </div>
         </div>
@@ -119,7 +119,7 @@ export default function AdminCalendar({
           <select
             value={selectedUserFilter}
             onChange={(e) => setSelectedUserFilter(e.target.value)}
-            className="border border-ink/10 rounded-lg px-3 py-1.5 text-xs text-ink font-semibold focus:outline-none focus:ring-2 focus:ring-red-primary/40 bg-white min-w-45"
+            className="border border-ink/10 rounded-lg px-3 py-1.5 text-xs text-ink font-semibold focus:outline-none focus:ring-2 focus:ring-red-primary/40 bg-white min-w-45 cursor-pointer"
           >
             <option value="all">All Teammates ({tasks.length} tasks)</option>
             {teamMembers.map((member) => (
@@ -226,13 +226,13 @@ export default function AdminCalendar({
               </div>
               <button
                 onClick={() => setSelectedDate(null)}
-                className="text-sm font-semibold text-ink-soft hover:text-ink px-2 py-1 rounded-lg hover:bg-slate-100 cursor-pointer"
+                className="text-xs font-semibold text-ink-soft hover:text-ink px-2 py-1 rounded-lg hover:bg-slate-100 cursor-pointer"
               >
-                ✕
+                Close
               </button>
             </div>
 
-            <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+            <div className="space-y-3 max-h-80 overflow-y-auto pr-1">
               {selectedDateTasks.length === 0 ? (
                 <p className="text-xs text-ink-soft py-4 text-center italic">
                   No tasks scheduled for this day.
@@ -248,12 +248,12 @@ export default function AdminCalendar({
                         type="checkbox"
                         checked={task.status === "completed"}
                         onChange={() => handleToggleTask(task)}
-                        className="mt-0.5 h-4 w-4 accent-red-primary shrink-0"
+                        className="mt-0.5 h-4 w-4 accent-red-primary shrink-0 cursor-pointer"
                       />
-                      <div className="space-y-0.5 flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
+                      <div className="space-y-1.5 flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <p
-                            className={`text-xs font-semibold truncate ${
+                            className={`text-xs font-semibold ${
                               task.status === "completed"
                                 ? "line-through text-ink-soft"
                                 : "text-ink"
@@ -261,23 +261,61 @@ export default function AdminCalendar({
                           >
                             {task.title}
                           </p>
-                          {task.profiles?.full_name && (
-                            <span className="text-[10px] bg-red-primary/10 text-red-primary font-semibold px-1.5 py-0.5 rounded shrink-0">
-                              {task.profiles.full_name}
-                            </span>
-                          )}
+                          <span
+                            className={`text-[10px] px-1.5 py-0.5 rounded font-semibold ${
+                              task.status === "completed"
+                                ? "bg-emerald-100 text-emerald-800"
+                                : "bg-amber-100 text-amber-800"
+                            }`}
+                          >
+                            {task.status === "completed" ? "Completed" : "To-Do"}
+                          </span>
                         </div>
+
                         {task.description && (
-                          <p className="text-[11px] text-ink-soft line-clamp-2">
+                          <p className="text-[11px] text-ink-soft whitespace-pre-wrap">
                             {task.description}
                           </p>
                         )}
+
+                        <div className="flex items-center gap-2 pt-1">
+                          {task.profiles?.avatar_url ? (
+                            <img
+                              src={task.profiles.avatar_url}
+                              alt={task.profiles.full_name || "User"}
+                              className="w-5 h-5 rounded-full object-cover border border-ink/10"
+                            />
+                          ) : (
+                            <div className="w-5 h-5 rounded-full bg-red-primary/10 text-red-primary font-bold text-[10px] flex items-center justify-center border border-red-primary/20">
+                              {task.profiles?.full_name ? task.profiles.full_name[0].toUpperCase() : "U"}
+                            </div>
+                          )}
+                          <span className="text-[11px] font-semibold text-red-primary">
+                            {task.profiles?.full_name || "Unassigned"}
+                          </span>
+                        </div>
+
+                        <div className="text-[11px]">
+                          <span className="font-semibold text-ink-soft">Summary Link: </span>
+                          {task.summary_url ? (
+                            <a
+                              href={task.summary_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-600 underline hover:text-blue-800 font-medium cursor-pointer"
+                            >
+                              View Summary
+                            </a>
+                          ) : (
+                            <span className="text-ink-soft/70 italic">Blank</span>
+                          )}
+                        </div>
                       </div>
                     </div>
 
                     <button
                       onClick={() => handleDeleteTask(task.id)}
-                      className="text-xs text-ink-soft hover:text-red-primary shrink-0 cursor-pointer"
+                      className="text-xs text-ink-soft hover:text-red-primary shrink-0 cursor-pointer font-medium"
                     >
                       Delete
                     </button>

@@ -6,9 +6,10 @@ type Task = {
   id: string;
   title: string;
   description: string | null;
-  frequency: "daily" | "weekly" | "bi_weekly" | "monthly" | "half-yearly";
+  frequency: "daily" | "weekly" | "bi_weekly" | "monthly" | "half-yearly" | string;
   due_date: string | null;
-  status: "todo" | "in_progress" | "completed";
+  summary_url?: string | null;
+  status: "todo" | "in_progress" | "completed" | string;
   completed_at: string | null;
   created_at: string;
 };
@@ -17,6 +18,8 @@ type Rollup = {
   user_id: string;
   full_name: string;
   sub_group: string | null;
+  group_name?: string | null;
+  avatar_url?: string | null;
   total_tasks: number;
   completed_tasks: number;
   pct_complete: number | null;
@@ -37,7 +40,6 @@ export default function UserProgressList({ rollups }: { rollups: Rollup[] }) {
 
     setExpandedUser(userId);
 
-    // Fetch tasks if not already cached in local state
     if (!userTasks[userId]) {
       setLoadingTasks(userId);
       try {
@@ -57,7 +59,7 @@ export default function UserProgressList({ rollups }: { rollups: Rollup[] }) {
   async function handleRemove(userId: string) {
     if (
       !confirm(
-        "Remove this user? This deletes their account and all their tasks."
+        "Remove this person? This deletes their account and all their tasks."
       )
     )
       return;
@@ -77,9 +79,8 @@ export default function UserProgressList({ rollups }: { rollups: Rollup[] }) {
     setRemovingId(null);
   }
 
-  // Format utility for readable timestamps
   function formatDate(dateString: string | null) {
-    if (!dateString) return "—";
+    if (!dateString) return "N/A";
     return new Date(dateString).toLocaleDateString("en-US", {
       month: "short",
       day: "numeric",
@@ -100,16 +101,27 @@ export default function UserProgressList({ rollups }: { rollups: Rollup[] }) {
             key={r.user_id}
             className="bg-white border border-ink/10 rounded-xl p-4 shadow-sm space-y-3"
           >
-            {/* Summary Row */}
             <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="font-semibold text-sm text-ink">
-                  {r.full_name || "Unnamed"}
-                </p>
-                <p className="text-xs text-ink-soft">
-                  {r.sub_group ?? "No group"} · {r.completed_tasks}/
-                  {r.total_tasks} done
-                </p>
+              <div className="flex items-center gap-3">
+                {r.avatar_url ? (
+                  <img
+                    src={r.avatar_url}
+                    alt={r.full_name || "User"}
+                    className="w-10 h-10 rounded-full object-cover border border-ink/10 shrink-0"
+                  />
+                ) : (
+                  <div className="w-10 h-10 rounded-full bg-red-primary/10 text-red-primary font-bold text-sm flex items-center justify-center shrink-0 border border-red-primary/20">
+                    {r.full_name ? r.full_name[0].toUpperCase() : "U"}
+                  </div>
+                )}
+                <div>
+                  <p className="font-semibold text-sm text-ink">
+                    {r.full_name || "Unnamed"}
+                  </p>
+                  <p className="text-xs text-ink-soft">
+                    {r.group_name ?? r.sub_group ?? "No group"} · {r.completed_tasks}/{r.total_tasks} done
+                  </p>
+                </div>
               </div>
 
               <div className="flex items-center gap-3 shrink-0">
@@ -127,14 +139,13 @@ export default function UserProgressList({ rollups }: { rollups: Rollup[] }) {
                 <button
                   onClick={() => handleRemove(r.user_id)}
                   disabled={removingId === r.user_id}
-                  className="text-xs text-ink-soft hover:text-red-primary disabled:opacity-50 cursor-pointer"
+                  className="text-xs text-red-primary/80 hover:text-red-primary font-medium disabled:opacity-50 cursor-pointer"
                 >
-                  {removingId === r.user_id ? "Removing..." : "Remove"}
+                  {removingId === r.user_id ? "Removing..." : "Remove this person"}
                 </button>
               </div>
             </div>
 
-            {/* Progress Bar */}
             <div className="h-1.5 bg-ink/5 rounded-full overflow-hidden">
               <div
                 className="h-full bg-red-primary rounded-full transition-all"
@@ -142,7 +153,6 @@ export default function UserProgressList({ rollups }: { rollups: Rollup[] }) {
               />
             </div>
 
-            {/* Expanded User Tasks Detail View */}
             {isExpanded && (
               <div className="pt-3 border-t border-ink/10 space-y-3">
                 <div className="flex items-center justify-between">
@@ -164,59 +174,73 @@ export default function UserProgressList({ rollups }: { rollups: Rollup[] }) {
                     {tasks.map((task) => (
                       <div
                         key={task.id}
-                        className="bg-ink/5 rounded-lg p-3.5 text-xs space-y-2 border border-ink/10 flex flex-col justify-between"
+                        className="bg-slate-50/80 rounded-lg p-3.5 text-xs space-y-2.5 border border-ink/10 flex flex-col justify-between"
                       >
-                        {/* Header & Status */}
-                        <div className="space-y-1">
+                        <div className="space-y-1.5">
                           <div className="flex items-start justify-between gap-2">
                             <p className="font-semibold text-ink text-sm leading-snug">
                               {task.title}
                             </p>
                             <span
-                              className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide shrink-0 ${
-                                task.status === "completed"
-                                  ? "bg-green-100 text-green-800"
+                              className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide shrink-0 ${task.status === "completed"
+                                  ? "bg-emerald-100 text-emerald-800"
                                   : task.status === "in_progress"
-                                  ? "bg-amber-100 text-amber-800"
-                                  : "bg-gray-200 text-gray-700"
-                              }`}
+                                    ? "bg-amber-100 text-amber-800"
+                                    : "bg-slate-200 text-slate-700"
+                                }`}
                             >
                               {task.status.replace("_", " ")}
                             </span>
                           </div>
 
-                          {/* Full Description */}
                           {task.description ? (
-                            <p className="text-ink/80 whitespace-pre-wrap leading-relaxed">
+                            <p className="text-ink/80 whitespace-pre-wrap leading-relaxed text-xs">
                               {task.description}
                             </p>
                           ) : (
-                            <p className="text-ink-soft/60 italic">
+                            <p className="text-ink-soft/60 italic text-xs">
                               No description provided
                             </p>
                           )}
                         </div>
 
-                        {/* Metadata Footer */}
+                        <div className="pt-2 border-t border-ink/10 text-[11px]">
+                          <span className="font-semibold text-ink">Summary URL: </span>
+                          {task.summary_url ? (
+                            <a
+                              href={task.summary_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-600 underline font-medium hover:text-blue-800 cursor-pointer"
+                            >
+                              View Summary
+                            </a>
+                          ) : (
+                            <span className="text-ink-soft/70 italic">No summary attached</span>
+                          )}
+                        </div>
+
                         <div className="pt-2 border-t border-ink/10 grid grid-cols-2 gap-x-2 gap-y-1 text-[11px] text-ink-soft">
                           <div>
-                            <span className="font-medium text-ink">Frequency:</span>{" "}
-                            {/* <span className="capitalize">{task.frequency.replace("_", " ")}</span> */}
+                            <span className="font-semibold text-ink">Frequency:</span>{" "}
+                            <span className="capitalize">{task.frequency ? task.frequency.replace("_", " ") : "N/A"}</span>
                           </div>
 
                           <div>
-                            <span className="font-medium text-ink">Due Date:</span>{" "}
-                            {task.due_date ? task.due_date : "None"}
+                            <span className="font-semibold text-ink">Due Date:</span>{" "}
+                            {task.due_date ? task.due_date : "N/A"}
                           </div>
 
                           <div>
-                            <span className="font-medium text-ink">Created:</span>{" "}
+                            <span className="font-semibold text-ink">Created:</span>{" "}
                             {formatDate(task.created_at)}
                           </div>
 
                           <div>
-                            <span className="font-medium text-ink">Completed:</span>{" "}
-                            {formatDate(task.completed_at)}
+                            <span className="font-semibold text-ink">Completed:</span>{" "}
+                            {task.status === "completed"
+                              ? formatDate(task.completed_at)
+                              : "todo"}
                           </div>
                         </div>
                       </div>

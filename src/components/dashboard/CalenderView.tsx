@@ -9,7 +9,6 @@ import {
   eachDayOfInterval,
   format,
   isSameMonth,
-  isSameDay,
   isToday,
   addMonths,
   subMonths,
@@ -21,7 +20,6 @@ export default function CalendarView({
   onAdd,
   onToggle,
   onDelete,
-  onSelectTask, // 1. Destructure onSelectTask here
 }: {
   tasks: Task[];
   onAdd: (
@@ -30,19 +28,38 @@ export default function CalendarView({
     frequency: Task["frequency"],
     dueDate: string | null
   ) => Promise<void> | void;
-  onToggle: (task: Task) => void;
+  onToggle: (task: Task) => Promise<void> | void;
   onDelete: (id: string) => void;
-  onSelectTask?: (task: Task) => void; // 2. Add prop type definition here
+  onSelectTask?: (task: Task) => void;
 }) {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [userFilter, setUserFilter] = useState<string>("all");
+
+  // Track in-flight toggle requests per task ID
+  const [togglingIds, setTogglingIds] = useState<Record<string, boolean>>({});
 
   // Modal form states
   const [newTitle, setNewTitle] = useState("");
   const [newDescription, setNewDescription] = useState("");
   const [newFrequency, setNewFrequency] = useState<Task["frequency"]>("daily");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Handle asynchronous task toggling with spinner
+  async function handleToggleTask(
+    e: React.MouseEvent | React.ChangeEvent,
+    task: Task
+  ) {
+    e.stopPropagation();
+    if (togglingIds[task.id]) return;
+
+    setTogglingIds((prev) => ({ ...prev, [task.id]: true }));
+    try {
+      await onToggle(task);
+    } finally {
+      setTogglingIds((prev) => ({ ...prev, [task.id]: false }));
+    }
+  }
 
   // Extract unique team members from tasks
   const teamMembers = useMemo(() => {
@@ -171,16 +188,18 @@ export default function CalendarView({
               <div
                 key={key}
                 onClick={() => setSelectedDate(day)}
-                className={`bg-white min-h-30 p-2 flex flex-col justify-start cursor-pointer transition-colors hover:bg-red-primary/2 ${!inMonth ? "bg-slate-50/60 opacity-40" : ""
-                  }`}
+                className={`bg-white min-h-30 p-2 flex flex-col justify-start cursor-pointer transition-colors hover:bg-red-primary/2 ${
+                  !inMonth ? "bg-slate-50/60 opacity-40" : ""
+                }`}
               >
                 {/* Date Header */}
                 <div className="flex items-center justify-between mb-1.5">
                   <span
-                    className={`text-xs font-semibold h-6 w-6 rounded-full flex items-center justify-center ${isToday(day)
+                    className={`text-xs font-semibold h-6 w-6 rounded-full flex items-center justify-center ${
+                      isToday(day)
                         ? "bg-red-primary text-white"
                         : "text-ink"
-                      }`}
+                    }`}
                   >
                     {format(day, "d")}
                   </span>
@@ -193,38 +212,44 @@ export default function CalendarView({
 
                 {/* Tasks List inside Day Cell */}
                 <div className="space-y-1 overflow-y-auto max-h-21.25 pr-0.5 scrollbar-none">
-                  {dayTasks.slice(0, 3).map((task) => (
-                    <div
-                      key={task.id}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onToggle(task);
-                      }}
-                      className={`text-[11px] p-1.5 rounded-md border flex flex-col gap-0.5 transition-all ${task.status === "completed"
-                          ? "bg-slate-100 border-slate-200 text-ink-soft line-through"
-                          : "bg-white border-ink/10 text-ink hover:border-red-primary/40 shadow-2xs"
-                        }`}
-                    >
-                      <div className="flex items-center justify-between gap-1">
-                        <span className="font-medium truncate flex-1">
-                          {task.title}
-                        </span>
-                        <input
-                          type="checkbox"
-                          checked={task.status === "completed"}
-                          onChange={() => { }} // Handled by parent click
-                          className="h-3 w-3 accent-red-primary shrink-0"
-                        />
-                      </div>
+                  {dayTasks.slice(0, 3).map((task) => {
+                    const isToggling = !!togglingIds[task.id];
 
-                      {/* User Badge on Task Card */}
-                      {task.profiles?.full_name && (
-                        <span className="text-[9px] font-semibold text-red-primary/90 bg-red-primary/10 px-1 py-0.2 rounded w-fit max-w-full truncate">
-                          {task.profiles.full_name}
-                        </span>
-                      )}
-                    </div>
-                  ))}
+                    return (
+                      <div
+                        key={task.id}
+                        onClick={(e) => handleToggleTask(e, task)}
+                        className={`text-[11px] p-1.5 rounded-md border flex flex-col gap-0.5 transition-all ${
+                          task.status === "completed"
+                            ? "bg-slate-100 border-slate-200 text-ink-soft line-through"
+                            : "bg-white border-ink/10 text-ink hover:border-red-primary/40 shadow-2xs"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-1">
+                          <span className="font-medium truncate flex-1">
+                            {task.title}
+                          </span>
+                          {isToggling ? (
+                            <div className="h-3 w-3 border-2 border-red-primary border-t-transparent rounded-full animate-spin shrink-0" />
+                          ) : (
+                            <input
+                              type="checkbox"
+                              checked={task.status === "completed"}
+                              onChange={() => {}}
+                              className="h-3 w-3 accent-red-primary shrink-0 cursor-pointer"
+                            />
+                          )}
+                        </div>
+
+                        {/* User Badge on Task Card */}
+                        {task.profiles?.full_name && (
+                          <span className="text-[9px] font-semibold text-red-primary/90 bg-red-primary/10 px-1 py-0.2 rounded w-fit max-w-full truncate">
+                            {task.profiles.full_name}
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })}
 
                   {/* Overflow indicator if more than 3 tasks */}
                   {dayTasks.length > 3 && (
@@ -268,49 +293,58 @@ export default function CalendarView({
                   No tasks assigned for this date.
                 </p>
               ) : (
-                selectedDateTasks.map((task) => (
-                  <div
-                    key={task.id}
-                    className="flex items-start justify-between gap-3 border border-ink/10 rounded-lg p-3 bg-slate-50/50"
-                  >
-                    <div className="flex items-start gap-2.5 flex-1 min-w-0">
-                      <input
-                        type="checkbox"
-                        checked={task.status === "completed"}
-                        onChange={() => onToggle(task)}
-                        className="mt-0.5 h-4 w-4 accent-red-primary shrink-0"
-                      />
-                      <div className="space-y-0.5 flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <p
-                            className={`text-xs font-semibold truncate ${task.status === "completed"
-                                ? "line-through text-ink-soft"
-                                : "text-ink"
+                selectedDateTasks.map((task) => {
+                  const isToggling = !!togglingIds[task.id];
+
+                  return (
+                    <div
+                      key={task.id}
+                      className="flex items-start justify-between gap-3 border border-ink/10 rounded-lg p-3 bg-slate-50/50"
+                    >
+                      <div className="flex items-start gap-2.5 flex-1 min-w-0">
+                        {isToggling ? (
+                          <div className="mt-0.5 h-4 w-4 border-2 border-red-primary border-t-transparent rounded-full animate-spin shrink-0" />
+                        ) : (
+                          <input
+                            type="checkbox"
+                            checked={task.status === "completed"}
+                            onChange={(e) => handleToggleTask(e, task)}
+                            className="mt-0.5 h-4 w-4 accent-red-primary shrink-0 cursor-pointer"
+                          />
+                        )}
+                        <div className="space-y-0.5 flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <p
+                              className={`text-xs font-semibold truncate ${
+                                task.status === "completed"
+                                  ? "line-through text-ink-soft"
+                                  : "text-ink"
                               }`}
-                          >
-                            {task.title}
-                          </p>
-                          {task.profiles?.full_name && (
-                            <span className="text-[10px] bg-red-primary/10 text-red-primary font-semibold px-1.5 py-0.5 rounded shrink-0">
-                              {task.profiles.full_name}
-                            </span>
+                            >
+                              {task.title}
+                            </p>
+                            {task.profiles?.full_name && (
+                              <span className="text-[10px] bg-red-primary/10 text-red-primary font-semibold px-1.5 py-0.5 rounded shrink-0">
+                                {task.profiles.full_name}
+                              </span>
+                            )}
+                          </div>
+                          {task.description && (
+                            <p className="text-[11px] text-ink-soft line-clamp-2">
+                              {task.description}
+                            </p>
                           )}
                         </div>
-                        {task.description && (
-                          <p className="text-[11px] text-ink-soft line-clamp-2">
-                            {task.description}
-                          </p>
-                        )}
                       </div>
+                      <button
+                        onClick={() => onDelete(task.id)}
+                        className="text-xs text-ink-soft cursor-pointer hover:text-red-primary shrink-0"
+                      >
+                        Delete
+                      </button>
                     </div>
-                    <button
-                      onClick={() => onDelete(task.id)}
-                      className="text-xs text-ink-soft cursor-pointer hover:text-red-primary shrink-0"
-                    >
-                      Delete
-                    </button>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
 
