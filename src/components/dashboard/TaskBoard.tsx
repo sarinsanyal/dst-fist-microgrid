@@ -5,16 +5,20 @@ import { createClient } from "../../../lib/supabase/client";
 import type { Task } from "@/types/task";
 import TaskListView from "./TaskListView";
 import CalendarView from "./CalenderView";
+import TaskModal from "./TaskModal";
 
 export default function TaskBoard({
   initialTasks,
   userId,
+  isAdmin = false,
 }: {
   initialTasks: Task[];
   userId: string;
+  isAdmin: boolean;
 }) {
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
   const [view, setView] = useState<"list" | "calendar">("list");
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const supabase = createClient();
 
   async function addTask(
@@ -35,7 +39,7 @@ export default function TaskBoard({
         assigned_to: userId,
         status: "todo",
       })
-      .select()
+      .select("*, profiles:assigned_to(full_name)")
       .single();
 
     if (!error && data) {
@@ -53,27 +57,25 @@ export default function TaskBoard({
     setTasks((prev) =>
       prev.map((t) =>
         t.id === task.id
-          ? {
-              ...t,
-              status: nextStatus,
-              completed_at: nextCompletedAt,
-            }
+          ? { ...t, status: nextStatus, completed_at: nextCompletedAt }
           : t
       )
     );
 
     await supabase
       .from("tasks")
-      .update({
-        status: nextStatus,
-        completed_at: nextCompletedAt,
-      })
+      .update({ status: nextStatus, completed_at: nextCompletedAt })
       .eq("id", task.id);
   }
 
   async function deleteTask(id: string) {
     setTasks((prev) => prev.filter((t) => t.id !== id));
     await supabase.from("tasks").delete().eq("id", id);
+  }
+
+  function handleUpdateTask(updatedTask: Task) {
+    setTasks((prev) => prev.map((t) => (t.id === updatedTask.id ? updatedTask : t)));
+    setSelectedTask(updatedTask);
   }
 
   return (
@@ -107,6 +109,7 @@ export default function TaskBoard({
           onAdd={addTask}
           onToggle={toggleTask}
           onDelete={deleteTask}
+          onSelectTask={(task) => setSelectedTask(task)}
         />
       ) : (
         <CalendarView
@@ -114,6 +117,15 @@ export default function TaskBoard({
           onAdd={addTask}
           onToggle={toggleTask}
           onDelete={deleteTask}
+          onSelectTask={(task) => setSelectedTask(task)}
+        />
+      )}
+
+      {selectedTask && (
+        <TaskModal
+          task={selectedTask}
+          onClose={() => setSelectedTask(null)}
+          onUpdateTask={handleUpdateTask}
         />
       )}
     </div>

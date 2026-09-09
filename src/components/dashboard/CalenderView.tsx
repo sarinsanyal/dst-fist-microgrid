@@ -21,6 +21,7 @@ export default function CalendarView({
   onAdd,
   onToggle,
   onDelete,
+  onSelectTask, // 1. Destructure onSelectTask here
 }: {
   tasks: Task[];
   onAdd: (
@@ -31,6 +32,7 @@ export default function CalendarView({
   ) => Promise<void> | void;
   onToggle: (task: Task) => void;
   onDelete: (id: string) => void;
+  onSelectTask?: (task: Task) => void; // 2. Add prop type definition here
 }) {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -169,18 +171,16 @@ export default function CalendarView({
               <div
                 key={key}
                 onClick={() => setSelectedDate(day)}
-                className={`bg-white min-h-30 p-2 flex flex-col justify-start cursor-pointer transition-colors hover:bg-red-primary/2 ${
-                  !inMonth ? "bg-slate-50/60 opacity-40" : ""
-                }`}
+                className={`bg-white min-h-30 p-2 flex flex-col justify-start cursor-pointer transition-colors hover:bg-red-primary/2 ${!inMonth ? "bg-slate-50/60 opacity-40" : ""
+                  }`}
               >
                 {/* Date Header */}
                 <div className="flex items-center justify-between mb-1.5">
                   <span
-                    className={`text-xs font-semibold h-6 w-6 rounded-full flex items-center justify-center ${
-                      isToday(day)
+                    className={`text-xs font-semibold h-6 w-6 rounded-full flex items-center justify-center ${isToday(day)
                         ? "bg-red-primary text-white"
                         : "text-ink"
-                    }`}
+                      }`}
                   >
                     {format(day, "d")}
                   </span>
@@ -200,11 +200,10 @@ export default function CalendarView({
                         e.stopPropagation();
                         onToggle(task);
                       }}
-                      className={`text-[11px] p-1.5 rounded-md border flex flex-col gap-0.5 transition-all ${
-                        task.status === "completed"
+                      className={`text-[11px] p-1.5 rounded-md border flex flex-col gap-0.5 transition-all ${task.status === "completed"
                           ? "bg-slate-100 border-slate-200 text-ink-soft line-through"
                           : "bg-white border-ink/10 text-ink hover:border-red-primary/40 shadow-2xs"
-                      }`}
+                        }`}
                     >
                       <div className="flex items-center justify-between gap-1">
                         <span className="font-medium truncate flex-1">
@@ -213,7 +212,7 @@ export default function CalendarView({
                         <input
                           type="checkbox"
                           checked={task.status === "completed"}
-                          onChange={() => {}} // Handled by parent click
+                          onChange={() => { }} // Handled by parent click
                           className="h-3 w-3 accent-red-primary shrink-0"
                         />
                       </div>
@@ -284,11 +283,10 @@ export default function CalendarView({
                       <div className="space-y-0.5 flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                           <p
-                            className={`text-xs font-semibold truncate ${
-                              task.status === "completed"
+                            className={`text-xs font-semibold truncate ${task.status === "completed"
                                 ? "line-through text-ink-soft"
                                 : "text-ink"
-                            }`}
+                              }`}
                           >
                             {task.title}
                           </p>

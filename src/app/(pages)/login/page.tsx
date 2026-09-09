@@ -1,13 +1,11 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "../../../../lib/supabase/client";
 
 type Mode = "login" | "signup";
 type Group = { id: string; name: string };
-
-const PENDING_KEY_PREFIX = "pending_profile_";
 
 export default function LoginPage() {
   const [mode, setMode] = useState<Mode>("login");
@@ -16,14 +14,11 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [needsResend, setNeedsResend] = useState(false);
-  const [checkEmail, setCheckEmail] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // Avatar
+  // Avatar state
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Specialties tag input
   const [specialties, setSpecialties] = useState<string[]>([]);
@@ -45,62 +40,6 @@ export default function LoginPage() {
       .then(({ data }) => {
         if (data) setGroupsList(data);
       });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // If there's a pending signup (avatar/specialties/group saved before email confirmation),
-  // finish it off the next time this user successfully logs in.
-  useEffect(() => {
-    async function completePendingProfile() {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user?.email) return;
-
-      const key = PENDING_KEY_PREFIX + user.email;
-      const raw = localStorage.getItem(key);
-      if (!raw) return;
-
-      try {
-        const pending = JSON.parse(raw) as {
-          fullName: string;
-          specialties: string[];
-          avatarDataUrl: string | null;
-          groupName: string;
-        };
-
-        let avatarUrl: string | null = null;
-        if (pending.avatarDataUrl) {
-          const blob = await (await fetch(pending.avatarDataUrl)).blob();
-          const ext = blob.type.split("/")[1] || "jpg";
-          const path = `${user.id}/${Date.now()}.${ext}`;
-          const { error: uploadError } = await supabase.storage
-            .from("avatars")
-            .upload(path, blob, { upsert: true, contentType: blob.type });
-          if (!uploadError) {
-            const { data: pub } = supabase.storage.from("avatars").getPublicUrl(path);
-            avatarUrl = pub.publicUrl;
-          }
-        }
-
-        const groupId = await findOrCreateGroupId(pending.groupName);
-
-        await supabase
-          .from("profiles")
-          .update({
-            full_name: pending.fullName || null,
-            avatar_url: avatarUrl,
-            specialties: pending.specialties,
-            group_id: groupId,
-          })
-          .eq("id", user.id);
-
-        localStorage.removeItem(key);
-      } catch {
-        // Non-fatal — leave the pending entry so we retry on next login.
-      }
-    }
-
-    completePendingProfile();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function findOrCreateGroupId(rawName: string): Promise<string | null> {
@@ -121,7 +60,6 @@ export default function LoginPage() {
       .single();
 
     if (error) {
-      // Likely a race with someone else creating the same group — check again.
       const { data: retry } = await supabase
         .from("groups")
         .select("id")
@@ -135,11 +73,10 @@ export default function LoginPage() {
 
   function handleAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
-    if (!file) return;
-    setAvatarFile(file);
-    const reader = new FileReader();
-    reader.onload = () => setAvatarPreview(reader.result as string);
-    reader.readAsDataURL(file);
+    if (file) {
+      setAvatarFile(file);
+      setAvatarPreview(URL.createObjectURL(file));
+    }
   }
 
   function addSpecialty(raw: string) {
@@ -162,15 +99,6 @@ export default function LoginPage() {
     setSpecialties((prev) => prev.filter((s) => s !== value));
   }
 
-  function fileToDataUrl(file: File): Promise<string> {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
-  }
-
   const filteredGroups = groupsList.filter((g) =>
     g.name.toLowerCase().includes(groupQuery.toLowerCase())
   );
@@ -181,18 +109,12 @@ export default function LoginPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    setNeedsResend(false);
     setLoading(true);
 
     if (mode === "login") {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) {
-        if (error.message.toLowerCase().includes("email not confirmed")) {
-          setError("Please confirm your email first — check your inbox for the link.");
-          setNeedsResend(true);
-        } else {
-          setError(error.message);
-        }
+        setError(error.message);
         setLoading(false);
         return;
       }
@@ -217,63 +139,52 @@ export default function LoginPage() {
         return;
       }
 
-      const avatarDataUrl = avatarFile ? await fileToDataUrl(avatarFile) : null;
-
-      if (data.session && data.user) {
-        // Email confirmation is off — we're authenticated right away, do it all now.
+      if (data.user) {
         let avatarUrl: string | null = null;
+
+        // 1. Upload Avatar if selected
         if (avatarFile) {
           const ext = avatarFile.name.split(".").pop() || "jpg";
-          const path = `${data.user.id}/${Date.now()}.${ext}`;
-          const { error: uploadError } = await supabase.storage
+          const filePath = `${data.user.id}/${Date.now()}.${ext}`;
+
+          const { error: uploadErr } = await supabase.storage
             .from("avatars")
-            .upload(path, avatarFile, { upsert: true, contentType: avatarFile.type });
-          if (!uploadError) {
-            const { data: pub } = supabase.storage.from("avatars").getPublicUrl(path);
-            avatarUrl = pub.publicUrl;
+            .upload(filePath, avatarFile, { upsert: true, contentType: avatarFile.type });
+
+          if (!uploadErr) {
+            const { data: pubData } = supabase.storage
+              .from("avatars")
+              .getPublicUrl(filePath);
+            avatarUrl = pubData.publicUrl;
           }
         }
 
+        // 2. Find or Create Group
         const groupId = await findOrCreateGroupId(groupQuery);
 
-        await supabase
+        // 3. Upsert full profile info (creates row if trigger did not auto-create it)
+        const { error: profileError } = await supabase
           .from("profiles")
-          .update({
+          .upsert({
+            id: data.user.id,
             full_name: fullName,
-            avatar_url: avatarUrl,
             specialties: finalSpecialties,
             group_id: groupId,
-          })
-          .eq("id", data.user.id);
-      } else {
-        // Email confirmation required — stash for completion after first login.
-        localStorage.setItem(
-          PENDING_KEY_PREFIX + email,
-          JSON.stringify({
-            fullName,
-            specialties: finalSpecialties,
-            avatarDataUrl,
-            groupName: groupQuery,
-          })
-        );
+            ...(avatarUrl ? { avatar_url: avatarUrl } : {}),
+          });
+
+        if (profileError) {
+          setError(profileError.message);
+          setLoading(false);
+          return;
+        }
+
+        // 4. Redirect immediately after creation
+        router.push("/dashboard");
+        router.refresh();
       }
-
-      setCheckEmail(true);
     }
 
-    setLoading(false);
-  }
-
-  async function handleResend() {
-    setLoading(true);
-    const { error } = await supabase.auth.resend({ type: "signup", email });
-    if (error) {
-      setError(error.message);
-    } else {
-      setError(null);
-      setCheckEmail(true);
-      setNeedsResend(false);
-    }
     setLoading(false);
   }
 
@@ -294,36 +205,36 @@ export default function LoginPage() {
       >
         {mode === "signup" && (
           <>
-            {/* Avatar upload */}
-            <div className="flex items-center gap-4">
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className="w-16 h-16 rounded-full border border-ink/10 bg-ink/5 overflow-hidden flex items-center justify-center cursor-pointer shrink-0"
-              >
-                {avatarPreview ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={avatarPreview} alt="Avatar preview" className="w-full h-full object-cover" />
-                ) : (
-                  <span className="text-xs text-ink-soft">Photo</span>
-                )}
-              </button>
-              <div>
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  className="text-sm text-red-primary font-medium cursor-pointer hover:underline"
-                >
-                  {avatarPreview ? "Change photo" : "Upload photo"}
-                </button>
+            {/* Avatar Photo Selection */}
+            <div className="flex flex-col items-center justify-center mb-2">
+              <label className="cursor-pointer group flex flex-col items-center gap-2">
+                <div className="w-20 h-20 rounded-full border border-ink/10 bg-ink/5 overflow-hidden flex items-center justify-center relative">
+                  {avatarPreview ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={avatarPreview}
+                      alt="Avatar preview"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <span className="text-2xl text-ink-soft font-light">
+                      {fullName ? fullName[0].toUpperCase() : "+"}
+                    </span>
+                  )}
+                  <div className="absolute inset-0 bg-black/30 text-white text-[10px] font-medium flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    Upload
+                  </div>
+                </div>
+                <span className="text-xs text-ink-soft font-medium">
+                  {avatarPreview ? "Change Photo" : "Add Profile Photo"}
+                </span>
                 <input
-                  ref={fileInputRef}
                   type="file"
                   accept="image/*"
                   onChange={handleAvatarChange}
                   className="hidden"
                 />
-              </div>
+              </label>
             </div>
 
             <div>
@@ -454,7 +365,7 @@ export default function LoginPage() {
             />
             <button
               type="button"
-              onClick={() => setShowPassword((v) => !v)}
+              onClick={() => setShowPassword((value) => !value)}
               className="absolute inset-y-0 right-0 px-3 text-xs font-semibold text-ink-soft hover:text-ink cursor-pointer"
             >
               {showPassword ? "Hide" : "Show"}
@@ -464,16 +375,6 @@ export default function LoginPage() {
 
         {error && (
           <p className="text-sm text-red-primary font-medium">{error}</p>
-        )}
-
-        {needsResend && (
-          <button
-            type="button"
-            onClick={handleResend}
-            className="text-sm text-ink-soft hover:text-ink underline cursor-pointer"
-          >
-            Resend confirmation email
-          </button>
         )}
 
         <button
@@ -489,18 +390,9 @@ export default function LoginPage() {
         </button>
       </form>
 
-      {checkEmail && (
-        <p className="text-sm text-ink-soft mt-6 text-center">
-          Check <span className="font-semibold text-ink">{email}</span> for a
-          confirmation link before signing in.
-        </p>
-      )}
-
       <button
         onClick={() => {
           setError(null);
-          setNeedsResend(false);
-          setCheckEmail(false);
           setMode(mode === "login" ? "signup" : "login");
         }}
         className="text-sm text-ink-soft mt-4 text-center hover:text-ink cursor-pointer"

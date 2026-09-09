@@ -8,5 +8,6 @@ export type Task = {
   status: "todo" | "in_progress" | "completed";
   completed_at: string | null;
   created_at: string;
+  summary_url?: string | null; // Add this line
   profiles?: { full_name: string | null } | null; 
 };

@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { createClient } from "../../../lib/supabase/client";
+import { createClient } from "../../../lib/supabase/server";
 import TaskBoard from "./TaskBoard";
 import SignOutButton from "./SignOutButton";
 
@@ -20,10 +20,20 @@ export default async function DashboardPage() {
     .eq("id", user.id)
     .single();
 
-  const { data: tasks } = await supabase
+  let tasksQuery = supabase
     .from("tasks")
     .select("*")
     .order("due_date", { ascending: true, nullsFirst: false });
+
+  const isAdmin = profile?.role === "admin";
+  
+  if (!isAdmin) {
+    tasksQuery = tasksQuery.eq("assigned_to", user.id);
+  }
+
+  const { data: tasks } = await tasksQuery;
+
+
 
   return (
     <main className="mx-auto max-w-3xl px-6 py-12 min-h-screen">
@@ -39,7 +49,7 @@ export default async function DashboardPage() {
         <SignOutButton />
       </div>
 
-      <TaskBoard initialTasks={tasks ?? []} userId={user.id} />
+      <TaskBoard initialTasks={tasks ?? []} userId={user.id} isAdmin={isAdmin} />
     </main>
   );
 }

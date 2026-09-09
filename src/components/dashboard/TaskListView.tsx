@@ -13,6 +13,7 @@ type TaskListViewProps = {
   ) => Promise<void>;
   onToggle: (task: Task) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
+  onSelectTask: (task: Task) => void;
 };
 
 export default function TaskListView({
@@ -20,6 +21,7 @@ export default function TaskListView({
   onAdd,
   onToggle,
   onDelete,
+  onSelectTask,
 }: TaskListViewProps) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -39,7 +41,6 @@ export default function TaskListView({
       dueDate || null
     );
 
-    // Reset Form
     setTitle("");
     setDescription("");
     setDueDate("");
@@ -49,35 +50,27 @@ export default function TaskListView({
 
   return (
     <div className="space-y-6">
-      {/* Input Form Box */}
       <form
         onSubmit={handleSubmit}
         className="bg-white border border-ink/10 rounded-xl p-5 shadow-sm space-y-3"
       >
-        {/* Title Input */}
-        <div>
-          <input
-            type="text"
-            required
-            placeholder="Task title..."
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            className="w-full border border-ink/10 rounded-lg px-3 py-2 text-sm text-ink placeholder:text-ink-soft focus:outline-none focus:ring-2 focus:ring-red-primary/40"
-          />
-        </div>
+        <input
+          type="text"
+          required
+          placeholder="Task title..."
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          className="w-full border border-ink/10 rounded-lg px-3 py-2 text-sm text-ink placeholder:text-ink-soft focus:outline-none focus:ring-2 focus:ring-red-primary/40"
+        />
 
-        {/* Description Input */}
-        <div>
-          <textarea
-            placeholder="Description / details (optional)..."
-            rows={2}
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            className="w-full border border-ink/10 rounded-lg px-3 py-2 text-sm text-ink placeholder:text-ink-soft focus:outline-none focus:ring-2 focus:ring-red-primary/40 resize-none"
-          />
-        </div>
+        <textarea
+          placeholder="Description / details (optional)..."
+          rows={2}
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          className="w-full border border-ink/10 rounded-lg px-3 py-2 text-sm text-ink placeholder:text-ink-soft focus:outline-none focus:ring-2 focus:ring-red-primary/40 resize-none"
+        />
 
-        {/* Frequency & Date Selector Row */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <select
             value={frequency}
@@ -99,7 +92,6 @@ export default function TaskListView({
           />
         </div>
 
-        {/* Submit Button */}
         <button
           type="submit"
           disabled={isSubmitting || !title.trim()}
@@ -109,26 +101,26 @@ export default function TaskListView({
         </button>
       </form>
 
-      {/* Task List Items */}
       <div className="space-y-2">
         {tasks.map((task) => (
           <div
             key={task.id}
             className="bg-white border border-ink/10 rounded-xl p-4 shadow-sm flex items-start justify-between gap-3"
           >
-            <div className="flex items-start gap-3">
+            <div className="flex items-start gap-3 flex-1 cursor-pointer" onClick={() => onSelectTask(task)}>
               <input
                 type="checkbox"
                 checked={task.status === "completed"}
-                onChange={() => onToggle(task)}
+                onChange={(e) => {
+                  e.stopPropagation();
+                  onToggle(task);
+                }}
                 className="mt-1 h-4 w-4 rounded border-ink/20 text-red-primary focus:ring-red-primary/40 cursor-pointer"
               />
               <div className="space-y-1">
                 <p
                   className={`text-sm font-semibold text-ink ${
-                    task.status === "completed"
-                      ? "line-through text-ink-soft"
-                      : ""
+                    task.status === "completed" ? "line-through text-ink-soft" : ""
                   }`}
                 >
                   {task.title}
@@ -147,6 +139,11 @@ export default function TaskListView({
                   {task.due_date && (
                     <span className="bg-ink/5 px-2 py-0.5 rounded">
                       Due: {task.due_date}
+                    </span>
+                  )}
+                  {task.summary_url && (
+                    <span className="bg-emerald-100 text-emerald-800 font-medium px-2 py-0.5 rounded">
+                      📄 Summary Attached
                     </span>
                   )}
                 </div>
