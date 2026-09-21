@@ -250,7 +250,7 @@ export default function LoginPage() {
 
           console.log("Avatar URL:", avatarUrl);
         }
-        
+
         const groupId = await findOrCreateGroupId(groupQuery);
 
         const { error: profileError } = await supabase
@@ -303,7 +303,7 @@ export default function LoginPage() {
       >
         {mode === "signup" && (
           <>
-            <div className="flex flex-col items-center justify-center mb-2">
+            {/* <div className="flex flex-col items-center justify-center mb-2">
               <label className="cursor-pointer group flex flex-col items-center gap-2">
                 <div className="w-20 h-20 rounded-full border border-ink/10 bg-ink/5 overflow-hidden flex items-center justify-center relative">
                   {avatarPreview ? (
@@ -332,7 +332,7 @@ export default function LoginPage() {
                   className="hidden"
                 />
               </label>
-            </div>
+            </div> */}
 
             <div>
               <label className="text-xs font-semibold text-ink block mb-1.5">
