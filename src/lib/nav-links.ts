@@ -3,7 +3,7 @@ export const navLinks = [
   { label: "People", href: "/people" },
   { label: "Projects", href: "/projects" },
   { label: "Publications", href: "/publications" },
-  { label: "Awards", href: "/awards" },
+  { label: "Courses", href: "/courses" },
   { label: "Opportunities", href: "/opportunities" },
   { label: "News", href: "/news" },
 ] as const;

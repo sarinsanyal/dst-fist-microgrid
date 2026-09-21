@@ -8,12 +8,23 @@ type Mode = "login" | "signup";
 type Group = { id: string; name: string };
 
 export default function LoginPage() {
+  const DESIGNATIONS = [
+    "Professor",
+    "Post Doc Scholar",
+    "PhD Scholar",
+    "PG Research Student",
+    "UG Research Student",
+  ];
+
+  const [designation, setDesignation] = useState("");
   const [mode, setMode] = useState<Mode>("login");
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   // Avatar state
@@ -23,6 +34,9 @@ export default function LoginPage() {
   // Specialties tag input
   const [specialties, setSpecialties] = useState<string[]>([]);
   const [specialtyInput, setSpecialtyInput] = useState("");
+
+  const [googleScholar, setGoogleScholar] = useState("");
+  const [linkedin, setLinkedin] = useState("");
 
   // Group search/select
   const [groupsList, setGroupsList] = useState<Group[]>([]);
@@ -111,13 +125,48 @@ export default function LoginPage() {
     (g) => g.name.toLowerCase() === groupQuery.trim().toLowerCase()
   );
 
+  const passwordChecks = {
+    length: password.length >= 8,
+    lowercase: /[a-z]/.test(password),
+    uppercase: /[A-Z]/.test(password),
+    number: /[0-9]/.test(password),
+    special: /[^A-Za-z0-9]/.test(password),
+  };
+
+  const passwordStrength = Object.values(passwordChecks).filter(Boolean).length;
+
+  const passwordStrengthLabel =
+    passwordStrength <= 1
+      ? "Weak"
+      : passwordStrength === 2
+        ? "Fair"
+        : passwordStrength === 3 || passwordStrength === 4
+          ? "Good"
+          : "Strong";
+
+  const passwordsMatch =
+    confirmPassword.length > 0 && password === confirmPassword;
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     setLoading(true);
 
+    if (mode === "signup") {
+      if (password !== confirmPassword) {
+        setError("Passwords do not match.");
+        setLoading(false);
+        return;
+      }
+
+      if (passwordStrength < 3) {
+        setError("Please choose a stronger password.");
+        setLoading(false);
+        return;
+      }
+    }
+
     if (mode === "login") {
-      // 1. Sign in the user
       const { data: authData, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) {
         setError(error.message);
@@ -125,16 +174,21 @@ export default function LoginPage() {
         return;
       }
 
-      // 2. Fetch user's role from profiles
       if (authData.user) {
         const { data: profile } = await supabase
           .from("profiles")
-          .select("role")
+          .select("role, status")
           .eq("id", authData.user.id)
           .single();
 
-        // 3. Redirect based on role
-        const targetPath = profile?.role === "admin" ? "/admin" : "/dashboard";
+        if (profile?.status !== "approved") {
+          await supabase.auth.signOut();
+          setError("Your account is pending approval by the admin. You will be notified once approved.");
+          setLoading(false);
+          return;
+        }
+
+        const targetPath = profile.role === "admin" ? "/admin" : "/dashboard";
         window.location.href = targetPath;
         return;
       }
@@ -162,21 +216,41 @@ export default function LoginPage() {
         let avatarUrl: string | null = null;
 
         if (avatarFile) {
-          const ext = avatarFile.name.split(".").pop() || "jpg";
+          const ext = avatarFile.name.split(".").pop()?.toLowerCase() || "jpg";
           const filePath = `${data.user.id}/${Date.now()}.${ext}`;
 
-          const { error: uploadErr } = await supabase.storage
+          console.log("Uploading avatar:", {
+            name: avatarFile.name,
+            type: avatarFile.type,
+            size: avatarFile.size,
+            path: filePath,
+          });
+
+          const { data: uploadData, error: uploadErr } = await supabase.storage
             .from("avatars")
-            .upload(filePath, avatarFile, { upsert: true, contentType: avatarFile.type });
+            .upload(filePath, avatarFile, {
+              upsert: true,
+              contentType: avatarFile.type,
+            });
 
-          if (!uploadErr) {
-            const { data: pubData } = supabase.storage
-              .from("avatars")
-              .getPublicUrl(filePath);
-            avatarUrl = pubData.publicUrl;
+          if (uploadErr) {
+            console.error("Avatar upload failed:", uploadErr);
+            setError(`Avatar upload failed: ${uploadErr.message}`);
+            setLoading(false);
+            return;
           }
-        }
 
+          console.log("Avatar uploaded:", uploadData);
+
+          const { data: pubData } = supabase.storage
+            .from("avatars")
+            .getPublicUrl(filePath);
+
+          avatarUrl = pubData.publicUrl;
+
+          console.log("Avatar URL:", avatarUrl);
+        }
+        
         const groupId = await findOrCreateGroupId(groupQuery);
 
         const { error: profileError } = await supabase
@@ -184,8 +258,12 @@ export default function LoginPage() {
           .upsert({
             id: data.user.id,
             full_name: fullName,
+            designation,               // <-- added
             specialties: finalSpecialties,
             group_id: groupId,
+            email: email,
+            google_scholar: googleScholar || null,
+            linkedin: linkedin || null,
             ...(avatarUrl ? { avatar_url: avatarUrl } : {}),
           });
 
@@ -195,8 +273,12 @@ export default function LoginPage() {
           return;
         }
 
-        // New signups default to /dashboard
-        window.location.href = "/dashboard";
+        await supabase.auth.signOut();
+        setLoading(false);
+        setMode("login");
+        setError(null);
+        // Add separate success state
+        setSuccess("Account created! Your access is pending admin approval.");
         return;
       }
     }
@@ -212,7 +294,7 @@ export default function LoginPage() {
       <p className="text-ink-soft mb-10">
         {mode === "login"
           ? "Track your tasks for the Microgrid Lab."
-          : "Set up access to the Microgrid Lab tracker."}
+          : "Register yourself for the DST FIST Microgrid Lab."}
       </p>
 
       <form
@@ -264,6 +346,23 @@ export default function LoginPage() {
                 className="w-full border border-ink/10 rounded-lg px-3 py-2 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-red-primary/40"
                 placeholder="Jane Doe"
               />
+            </div>
+
+            <div>
+              <label className="text-xs font-semibold text-ink block mb-1.5">
+                Designation
+              </label>
+              <select
+                required
+                value={designation}
+                onChange={(e) => setDesignation(e.target.value)}
+                className="w-full border border-ink/10 rounded-lg px-3 py-2 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-red-primary/40 bg-white cursor-pointer"
+              >
+                <option value="" disabled>Select your role in the lab</option>
+                {DESIGNATIONS.map((d) => (
+                  <option key={d} value={d}>{d}</option>
+                ))}
+              </select>
             </div>
 
             <div className="relative">
@@ -345,6 +444,31 @@ export default function LoginPage() {
                 Press Enter or comma to add each one.
               </p>
             </div>
+            <div>
+              <label className="text-xs font-semibold text-ink block mb-1.5">
+                Google Scholar URL <span className="text-ink-soft font-normal">(optional)</span>
+              </label>
+              <input
+                type="url"
+                value={googleScholar}
+                onChange={(e) => setGoogleScholar(e.target.value)}
+                className="w-full border border-ink/10 rounded-lg px-3 py-2 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-red-primary/40"
+                placeholder="https://scholar.google.com/..."
+              />
+            </div>
+
+            <div>
+              <label className="text-xs font-semibold text-ink block mb-1.5">
+                LinkedIn URL <span className="text-ink-soft font-normal">(optional)</span>
+              </label>
+              <input
+                type="url"
+                value={linkedin}
+                onChange={(e) => setLinkedin(e.target.value)}
+                className="w-full border border-ink/10 rounded-lg px-3 py-2 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-red-primary/40"
+                placeholder="https://linkedin.com/in/..."
+              />
+            </div>
           </>
         )}
 
@@ -366,16 +490,18 @@ export default function LoginPage() {
           <label className="text-xs font-semibold text-ink block mb-1.5">
             Password
           </label>
+
           <div className="relative">
             <input
               type={showPassword ? "text" : "password"}
               required
-              minLength={6}
+              minLength={8}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="w-full border border-ink/10 rounded-lg px-3 py-2 pr-16 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-red-primary/40"
               placeholder="••••••••"
             />
+
             <button
               type="button"
               onClick={() => setShowPassword((value) => !value)}
@@ -384,10 +510,100 @@ export default function LoginPage() {
               {showPassword ? "Hide" : "Show"}
             </button>
           </div>
+
+          {mode === "signup" && password.length > 0 && (
+            <div className="mt-2 space-y-2">
+              <div className="flex gap-1">
+                {[1, 2, 3, 4, 5].map((level) => (
+                  <div
+                    key={level}
+                    className={`h-1.5 flex-1 rounded-full transition-colors ${level <= passwordStrength
+                      ? "bg-red-primary"
+                      : "bg-ink/10"
+                      }`}
+                  />
+                ))}
+              </div>
+
+              <div className="flex items-center justify-between">
+                <p className="text-xs text-ink-soft">
+                  Password strength:{" "}
+                  <span className="font-semibold text-ink">
+                    {passwordStrengthLabel}
+                  </span>
+                </p>
+
+                <p className="text-[10px] text-ink-soft">
+                  {passwordStrength}/5
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+                <PasswordRequirement
+                  met={passwordChecks.length}
+                  text="8+ characters"
+                />
+                <PasswordRequirement
+                  met={passwordChecks.lowercase}
+                  text="Lowercase letter"
+                />
+                <PasswordRequirement
+                  met={passwordChecks.uppercase}
+                  text="Uppercase letter"
+                />
+                <PasswordRequirement
+                  met={passwordChecks.number}
+                  text="Number"
+                />
+                <PasswordRequirement
+                  met={passwordChecks.special}
+                  text="Special character"
+                />
+              </div>
+            </div>
+          )}
         </div>
+
+        {mode === "signup" && (
+          <div>
+            <label className="text-xs font-semibold text-ink block mb-1.5">
+              Confirm Password
+            </label>
+
+            <input
+              type="password"
+              required
+              minLength={8}
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              className={`w-full border rounded-lg px-3 py-2 text-sm text-ink focus:outline-none focus:ring-2 ${confirmPassword.length > 0
+                ? passwordsMatch
+                  ? "border-green-500 focus:ring-green-500/30"
+                  : "border-red-primary/50 focus:ring-red-primary/40"
+                : "border-ink/10 focus:ring-red-primary/40"
+                }`}
+              placeholder="Re-enter your password"
+            />
+
+            {confirmPassword.length > 0 && (
+              <p
+                className={`text-xs mt-1 font-medium ${passwordsMatch ? "text-green-600" : "text-red-primary"
+                  }`}
+              >
+                {passwordsMatch
+                  ? "Passwords match"
+                  : "Passwords do not match"}
+              </p>
+            )}
+          </div>
+        )}
 
         {error && (
           <p className="text-sm text-red-primary font-medium">{error}</p>
+        )}
+
+        {success && (
+          <p className="text-sm text-green-600 font-medium">{success}</p>
         )}
 
         <button
@@ -406,6 +622,7 @@ export default function LoginPage() {
       <button
         onClick={() => {
           setError(null);
+          setSuccess(null);
           setMode(mode === "login" ? "signup" : "login");
         }}
         className="text-sm text-ink-soft mt-4 text-center hover:text-ink cursor-pointer"
@@ -415,5 +632,22 @@ export default function LoginPage() {
           : "Already have an account? Sign in"}
       </button>
     </main>
+  );
+}
+
+function PasswordRequirement({
+  met,
+  text,
+}: {
+  met: boolean;
+  text: string;
+}) {
+  return (
+    <p
+      className={`text-[10px] ${met ? "text-green-600" : "text-ink-soft"
+        }`}
+    >
+      {met ? "✓" : "○"} {text}
+    </p>
   );
 }

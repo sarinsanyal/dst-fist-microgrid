@@ -5,13 +5,8 @@ import AdminDashboardClient from "@/components/admin/AdminDashboardClient";
 export default async function AdminPage() {
   const supabase = await createClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    redirect("/login");
-  }
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
 
   const { data: profile } = await supabase
     .from("profiles")
@@ -26,7 +21,6 @@ export default async function AdminPage() {
     .select("*")
     .order("full_name");
 
-  // Fetch avatar_url and join group name via group_id
   const { data: profiles } = await supabase
     .from("profiles")
     .select("id, avatar_url, groups:group_id(name)");
@@ -61,10 +55,17 @@ export default async function AdminPage() {
     .select("*, profiles:assigned_to(full_name, avatar_url)")
     .order("due_date", { ascending: true, nullsFirst: false });
 
+  const { data: pendingUsers } = await supabase
+    .from("profiles")
+    .select("id, full_name, email, specialties, avatar_url, created_at, groups:group_id(name)")
+    .eq("status", "pending")
+    .order("created_at", { ascending: true });
+
   return (
     <AdminDashboardClient
       initialTasks={tasks ?? []}
       rollups={enrichedRollups}
+      pendingUsers={pendingUsers ?? []}
     />
   );
 }

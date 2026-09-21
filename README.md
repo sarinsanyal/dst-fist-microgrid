@@ -91,9 +91,9 @@ The **`role`** column on the `People` tab controls card grouping and sorting ord
 
 * `Professor`
 * `Post Doc Scholar`
-* `PhD Student`
-* `PG Research Scholar`
-* `UG Research Scholar`
+* `PhD Scholar`
+* `PG Research Student`
+* `UG Research Student`
 
 > **Critical Note:** Values like `professor` (lowercase) or `Professor in-charge` (extra words) will fail the exact string filter and hide the member from the primary section.
 

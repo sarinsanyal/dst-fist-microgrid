@@ -3,6 +3,14 @@ import { createClient } from "../../../../lib/supabase/server";
 import TaskDashboardContainer from "@/components/dashboard/TaskDashboardContainer";
 import SignOutButton from "@/components/dashboard/SignOutButton";
 import AvatarUpload from "@/components/dashboard/AvatarUpload";
+import type {
+  DashboardProject,
+  MemberOption,
+} from "@/components/dashboard/UserProjectsTab";
+
+type ProjectRow = Omit<DashboardProject, "member_ids"> & {
+  project_members: { profile_id: string }[] | null;
+};
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -18,7 +26,7 @@ export default async function DashboardPage() {
   // 1. Fetch Profile
   const { data: profile } = await supabase
     .from("profiles")
-    .select("full_name, role, avatar_url, specialties, groups:group_id(name)")
+    .select("full_name, role, designation, avatar_url, specialties, groups:group_id(name)")
     .eq("id", user.id)
     .single();
 
@@ -35,6 +43,31 @@ export default async function DashboardPage() {
   }
 
   const { data: tasks } = await tasksQuery;
+
+  // 3. Lab-wide projects (with member ids)
+  const { data: projectRows } = await supabase
+    .from("projects")
+    .select(
+      "id, title, description, status, image_url, funding_agency, grant_amount, link, created_by, created_at, project_members(profile_id)"
+    )
+    .order("created_at", { ascending: false });
+
+  const initialProjects: DashboardProject[] = (
+    (projectRows ?? []) as unknown as ProjectRow[]
+  ).map(({ project_members, ...p }) => ({
+    ...p,
+    member_ids: (project_members ?? []).map((m) => m.profile_id),
+  }));
+
+  // 4. Approved members for the member picker
+  const { data: memberRows } = await supabase
+    .from("profiles")
+    .select("id, full_name, role")
+    .eq("status", "approved")
+    .neq("role", "admin")
+    .order("full_name", { ascending: true });
+
+  const memberOptions = (memberRows ?? []) as MemberOption[];
 
   function extractGroupName(groups: unknown): string | undefined {
     if (!groups) return undefined;
@@ -72,9 +105,20 @@ export default async function DashboardPage() {
               <h1 className="font-serif text-3xl font-bold text-red-primary">
                 {profile?.full_name ?? "User"}
               </h1>
-              <p className="text-xs text-ink-soft">
-                Role: <span className="font-semibold text-ink capitalize">{profile?.role ?? "Member"}</span>
-              </p>
+              <div className="text-xs text-ink-soft space-y-0.5">
+                <p>
+                  Role:{" "}
+                  <span className="font-semibold text-ink capitalize">
+                    {profile?.role ?? "Member"}
+                  </span>
+                </p>
+                <p>
+                  Designation:{" "}
+                  <span className="font-semibold text-ink">
+                    {profile?.designation ?? "Not specified"}
+                  </span>
+                </p>
+              </div>
             </div>
 
             <div className="flex flex-wrap items-center gap-2 pt-1">
@@ -106,6 +150,8 @@ export default async function DashboardPage() {
       {/* Shared State Container */}
       <TaskDashboardContainer
         initialTasks={tasks ?? []}
+        initialProjects={initialProjects}
+        memberOptions={memberOptions}
         profile={formattedProfile}
         userId={user.id}
         isAdmin={isAdmin}

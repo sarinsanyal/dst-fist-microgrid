@@ -1,3 +1,4 @@
+
 // src/components/publications/PublicationsList.tsx
 "use client";
 
@@ -9,22 +10,26 @@ function PublicationRow({ pub }: { pub: Publication }) {
         <div className="border-b border-ink/10 py-5 last:border-0">
             <h3 className="font-serif font-bold text-ink leading-snug">{pub.title}</h3>
             <p className="text-sm text-ink-soft mt-1">{pub.authors}</p>
+
             <div className="flex flex-wrap items-center gap-3 mt-2">
-                {pub.journal && (
+                {pub.venue && (
                     <span className="text-xs font-semibold text-red-primary italic">
-                        {pub.journal}
+                        {pub.venue}
                     </span>
                 )}
+
                 {pub.year && (
                     <span className="text-xs bg-ink/5 text-ink-soft px-2 py-0.5 rounded-full">
                         {pub.year}
                     </span>
                 )}
+
                 {pub.doi && (
                     <span className="text-xs text-ink-soft">
                         DOI: {pub.doi}
                     </span>
                 )}
+
                 {pub.url && (
                     <a
                         href={pub.url}
@@ -46,11 +51,12 @@ export default function PublicationsList({ publications }: { publications: Publi
 
     const filtered = useMemo(() => {
         const q = query.toLowerCase();
+
         return publications
             .filter((p) =>
                 p.title.toLowerCase().includes(q) ||
                 p.authors.toLowerCase().includes(q) ||
-                p.journal.toLowerCase().includes(q)
+                (p.venue?.toLowerCase().includes(q) ?? false)
             )
             .sort((a, b) =>
                 sort === "newest"
@@ -61,15 +67,15 @@ export default function PublicationsList({ publications }: { publications: Publi
 
     return (
         <div>
-            {/* Controls */}
             <div className="flex flex-col sm:flex-row gap-3 mb-8">
                 <input
                     type="text"
-                    placeholder="Search by title, author, or journal..."
+                    placeholder="Search by title, author, or venue..."
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
                     className="flex-1 border border-ink/20 rounded-lg px-4 py-2.5 text-sm bg-white text-ink placeholder:text-ink-soft focus:outline-none focus:ring-2 focus:ring-red-primary/30"
                 />
+
                 <div className="relative">
                     <select
                         value={sort}
@@ -79,21 +85,30 @@ export default function PublicationsList({ publications }: { publications: Publi
                         <option value="newest">Newest first</option>
                         <option value="oldest">Oldest first</option>
                     </select>
+
                     <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center">
-                        <svg className="w-4 h-4 text-ink-soft" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        <svg
+                            className="w-4 h-4 text-ink-soft"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M19 9l-7 7-7-7"
+                            />
                         </svg>
                     </div>
                 </div>
             </div>
 
-            {/* Count */}
             <p className="text-sm text-ink-soft mb-4">
                 {filtered.length} publication{filtered.length !== 1 ? "s" : ""}
                 {query && ` matching "${query}"`}
             </p>
 
-            {/* List */}
             {filtered.length > 0 ? (
                 <div>
                     {filtered.map((pub, i) => (
@@ -101,7 +116,9 @@ export default function PublicationsList({ publications }: { publications: Publi
                     ))}
                 </div>
             ) : (
-                <p className="text-ink-soft text-sm py-10 text-center">No publications found.</p>
+                <p className="text-ink-soft text-sm py-10 text-center">
+                    No publications found.
+                </p>
             )}
         </div>
     );
